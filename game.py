@@ -26,23 +26,28 @@ class Game():
         self.dark = d
         self.light = l
         self.highlight = h
+
+        # Board
         for row in range(8):
             for col in range(8):
                 if (row % 2 == 0 and col % 2 != 0) or (row % 2 != 0 and col % 2 == 0) :
                     pygame.draw.rect(self.screen, l, pygame.rect.Rect(x + col * SQUARESIZE, y + row * SQUARESIZE, SQUARESIZE, SQUARESIZE))
                 else:
                     pygame.draw.rect(self.screen, d, pygame.rect.Rect(x + col * SQUARESIZE, y + row * SQUARESIZE, SQUARESIZE, SQUARESIZE))
-    
+
+        # Pieces
         for row in range(8):
             for col in range(8):
                 if self.board[row][col] != EMPTY:
                     self.screen.blit(self.board[row][col].image, (x + col * SQUARESIZE, y + row * SQUARESIZE)) if not self.flipped else self.screen.blit(self.board[row][col].image, (WIDTH - (x + col * SQUARESIZE) - SQUARESIZE, HEIGHT - (y + row * SQUARESIZE) - SQUARESIZE))
 
-
+        # Highlights
+        if self.startPos:
+            pygame.draw.rect(self.screen, h, pygame.rect.Rect((self.startPos[1] * SQUARESIZE) + self.x, (self.startPos[0] * SQUARESIZE) + self.y, SQUARESIZE, SQUARESIZE), 5) if not self.flipped else pygame.draw.rect(self.screen, h, pygame.rect.Rect(7 * SQUARESIZE - (self.startPos[1] * SQUARESIZE) + self.x, 7 * SQUARESIZE - ((self.startPos[0] * SQUARESIZE) + self.y), SQUARESIZE, SQUARESIZE), 5)
 
     def action(self):
-        col = pygame.mouse.get_pos()[0]//SQUARESIZE - self.x // SQUARESIZE if not self.flipped else 7 - (pygame.mouse.get_pos()[0]//SQUARESIZE - self.x // SQUARESIZE)
-        row = pygame.mouse.get_pos()[1]//SQUARESIZE - self.y // SQUARESIZE if not self.flipped else 7 - (pygame.mouse.get_pos()[1]//SQUARESIZE - self.y // SQUARESIZE)
+        col = (pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE)
+        row = (pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE)
         if not self.startPos:
             self.startPos = [row,col]
         elif not self.endPos:
