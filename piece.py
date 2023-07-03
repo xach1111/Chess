@@ -3,6 +3,7 @@ from constants import *
 class Piece():
     def __init__(self, name):
         self.name = name
+        self.colour = self.name[:5]
         if self.name == WKING or self.name == BKING:
             self.value = 200.0
         elif self.name == WQUEEN or self.name == BQUEEN:

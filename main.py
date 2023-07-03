@@ -23,11 +23,16 @@ def twoPlayer(username):
     board = Game(SCREEN)
     d, l, h = getColours(username)
     backButton = Button(SCREEN, 1110, 650, 280, 100, "Back")
+    label = Label(SCREEN, 1194, 450, "")
     run = True
     while run:
         SCREEN.fill(DARKGREY)
         board.flipped = board.turn == "Black"
         board.drawBoard(300, 0, d, l, h)
+        if board.gameOver:
+            label.setText(board.winner + " Wins!!")
+            label.draw()
+            print(label.renderedText.get_width())
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 board.action()
