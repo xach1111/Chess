@@ -22,7 +22,8 @@ class Game():
         self.endPos = None
         self.gameOver = False
         self.winner = ""
-        
+        self.enpassent = False
+        self.enpassentPosition = None
     def drawBoard(self, x, y, d, l ,h):
         self.x = x
         self.y = y
@@ -52,7 +53,6 @@ class Game():
                 for move in moves:
                     pygame.draw.rect(self.screen, h, pygame.rect.Rect((move[1] * SQUARESIZE) + self.x, (move[0] * SQUARESIZE) + self.y, SQUARESIZE, SQUARESIZE), 5) if not self.flipped else pygame.draw.rect(self.screen, h, pygame.rect.Rect(7 * SQUARESIZE - (move[1] * SQUARESIZE) + self.x, 7 * SQUARESIZE - ((move[0] * SQUARESIZE) + self.y), SQUARESIZE, SQUARESIZE), 5)
 
-
     def action(self):
         col = (pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE)
         row = (pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE)
@@ -65,21 +65,49 @@ class Game():
 
         if self.startPos and self.endPos:
             if self.endPos in self.validMoves(self.startPos):
-                self.board[self.endPos[0]][self.endPos[1]], self.board[self.startPos[0]][self.startPos[1]] =  self.board[self.startPos[0]][self.startPos[1]], EMPTY
-                if self.turn == "White":
-                    if self.checkForMate("Black"):
-                        self.gameOver = True
-                        self.winner = self.turn
-                else:
-                    if self.checkForMate("White"):
-                        self.gameOver = True
-                        self.winner = self.turn
-                self.startPos = self.endPos = None
-                self.turn = "White" if self.turn == "Black" else "Black"
+                self.makeMove()
             else:
                 self.startPos = self.endPos = None
                 if self.board[row][col] != EMPTY and self.board[row][col].colour == self.turn:
                     self.startPos = [row,col]
+    
+    def makeMove(self):
+        if self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.startPos[0] == 1 and self.endPos[0] == 3:
+            self.enpassent = True
+            self.enpassentPosition = self.endPos
+        elif self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.startPos[0] == 6 and self.endPos[0] == 4:
+            self.enpassent = True
+            self.enpassentPosition = self.endPos
+        else:
+            self.enpassent = False
+            self.enpassentPosition = None
+        if self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] - 1:
+            if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
+                self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY           
+        elif self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] + 1:
+            if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
+                self.board[self.endPos[0] - 1][self.endPos[1]] = EMPTY
+        
+        if self.board[self.startPos[0]][self.startPos[1]].name == WKING or self.board[self.startPos[0]][self.startPos[1]].name == BKING:
+            if self.startPos[1] == 4 and self.endPos[1] == 6:
+                self.board[self.startPos[0]][7].moved = True
+                self.board[self.startPos[0]][5], self.board[self.startPos[0]][7] = self.board[self.startPos[0]][7], EMPTY
+            if self.startPos[1] == 4 and self.endPos[1] == 2:
+                self.board[self.startPos[0]][0].moved = True
+                self.board[self.startPos[0]][3], self.board[self.startPos[0]][0] = self.board[self.startPos[0]][0], EMPTY
+        
+        self.board[self.startPos[0]][self.startPos[1]].moved = True
+        self.board[self.endPos[0]][self.endPos[1]], self.board[self.startPos[0]][self.startPos[1]] =  self.board[self.startPos[0]][self.startPos[1]], EMPTY
+        if self.turn == "White":
+            if self.checkForMate("Black"):
+                self.gameOver = True
+                self.winner = self.turn
+        else:
+            if self.checkForMate("White"):
+                self.gameOver = True
+                self.winner = self.turn
+        self.startPos = self.endPos = None
+        self.turn = "White" if self.turn == "Black" else "Black"
 
     def validMoves(self, startPos):
         colour = self.board[startPos[0]][startPos[1]].colour
@@ -93,9 +121,20 @@ class Game():
             self.board[move[0]][move[1]], self.board[startPos[0]][startPos[1]] =  temp, self.board[move[0]][move[1]]
         for move in illiegalMoves:
             moves.remove(move)
-        return moves
+        
+        if (self.board[startPos[0]][startPos[1]].name == WKING or self.board[startPos[0]][startPos[1]].name == BKING) and [startPos[0],startPos[1] + 2] in moves:
+            if self.checkForCheck(colour):
+                moves.remove([startPos[0],startPos[1] + 2])
+            elif [startPos[0],startPos[1] + 1] not in moves:
+                moves.remove([startPos[0],startPos[1] + 2])
 
-    
+        if (self.board[startPos[0]][startPos[1]].name == WKING or self.board[startPos[0]][startPos[1]].name == BKING) and [startPos[0],startPos[1] - 2] in moves:
+            if self.checkForCheck(colour):
+                moves.remove([startPos[0],startPos[1] - 2])
+            elif [startPos[0],startPos[1] - 1] not in moves:
+                moves.remove([startPos[0],startPos[1] - 2])
+        return moves
+  
     def checkForCheck(self, kingColour):
         position = []
         for row in range(8):
@@ -132,6 +171,12 @@ class Game():
                     if startPos[1] - 1 > -1 and (self.board[startPos[0] + 1][startPos[1] - 1] != EMPTY and self.board[startPos[0] + 1][startPos[1] - 1].colour != colour):
                         moves.append([startPos[0] + 1, startPos[1] - 1])
 
+                    if self.enpassent and startPos[1] + 1 < 8 and self.board[startPos[0] + 1][startPos[1] + 1] == EMPTY and self.enpassentPosition == [startPos[0], startPos[1] + 1] and self.board[startPos[0]][startPos[1] + 1].colour != colour:
+                        moves.append([startPos[0] + 1, startPos[1] + 1])
+                    
+                    if self.enpassent and startPos[1] - 1 > -1 and self.board[startPos[0] + 1][startPos[1] - 1] == EMPTY and self.enpassentPosition == [startPos[0], startPos[1] - 1] and self.board[startPos[0]][startPos[1] - 1].colour != colour:
+                        moves.append([startPos[0] + 1, startPos[1] - 1])
+
             elif self.board[startPos[0]][startPos[1]].name == WPAWN:
                 if startPos[0] - 1  > -1:
                     if self.board[startPos[0] - 1][startPos[1]] == EMPTY:
@@ -143,6 +188,12 @@ class Game():
                         moves.append([startPos[0] - 1, startPos[1] + 1])
                     
                     if startPos[1] - 1 > -1 and (self.board[startPos[0] - 1][startPos[1] - 1] != EMPTY and self.board[startPos[0] - 1][startPos[1] - 1].colour != colour):
+                        moves.append([startPos[0] - 1, startPos[1] - 1])
+                    
+                    if self.enpassent and startPos[1] + 1 < 8 and self.board[startPos[0] - 1][startPos[1] + 1] == EMPTY and self.enpassentPosition == [startPos[0], startPos[1] + 1] and self.board[startPos[0]][startPos[1] + 1].colour != colour:
+                        moves.append([startPos[0] - 1, startPos[1] + 1])
+                    
+                    if self.enpassent and startPos[1] - 1 > -1 and self.board[startPos[0] - 1][startPos[1] - 1] == EMPTY and self.enpassentPosition == [startPos[0], startPos[1] - 1] and self.board[startPos[0]][startPos[1] - 1].colour != colour:
                         moves.append([startPos[0] - 1, startPos[1] - 1])
 
             elif self.board[startPos[0]][startPos[1]].name == WKNGIHT or self.board[startPos[0]][startPos[1]].name == BKNIGHT:
@@ -221,6 +272,13 @@ class Game():
                 if oneleft > -1:
                     if self.board[startPos[0]][oneleft] == EMPTY or self.board[startPos[0]][oneleft].colour != colour:
                         moves.append([startPos[0], oneleft])
+                    
+                if not self.board[startPos[0]][startPos[1]].moved and self.board[startPos[0]][startPos[1] + 1] == EMPTY and self.board[startPos[0]][startPos[1] + 2] == EMPTY and self.board[startPos[0]][startPos[1] + 3] != EMPTY and (self.board[startPos[0]][startPos[1] + 3].name == WROOK or self.board[startPos[0]][startPos[1] + 3].name == BROOK) and not self.board[startPos[0]][startPos[1] + 3].moved:
+                    moves.append([startPos[0], startPos[1] + 2])
+                
+                if not self.board[startPos[0]][startPos[1]].moved and self.board[startPos[0]][startPos[1] - 1] == EMPTY and self.board[startPos[0]][startPos[1] - 2] == EMPTY and self.board[startPos[0]][startPos[1] - 3] == EMPTY and self.board[startPos[0]][startPos[1] - 4] != EMPTY and (self.board[startPos[0]][startPos[1] - 4].name == WROOK or self.board[startPos[0]][startPos[1] - 4].name == BROOK) and not self.board[startPos[0]][startPos[1] - 4].moved:
+                    moves.append([startPos[0], startPos[1] - 2])
+
 
             elif self.board[startPos[0]][startPos[1]].name == WROOK or self.board[startPos[0]][startPos[1]].name == BROOK:
                 row = startPos[0] + 1
