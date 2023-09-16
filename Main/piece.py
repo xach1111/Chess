@@ -12,9 +12,10 @@ class Piece():
             self.value = 5.63
         elif self.name == WBISHOP or self.name == BBISHOP:
             self.value = 3.33
-        elif self.name == WKNGIHT or self.name == BKNIGHT:
+        elif self.name == WKNIGHT or self.name == BKNIGHT:
             self.value = 3.05
         elif self.name == WPAWN or self.name == BPAWN:
             self.value = 1.0
         self.image = pygame.image.load("Assets/" + self.name + ".png").convert_alpha()
         self.moved = False
+    

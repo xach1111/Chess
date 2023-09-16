@@ -1,13 +1,49 @@
 import socket
 import sqlite3
 import threading
-HOST = "192.168.0.36"
+import random
+# HOST = "192.168.0.36"
+HOST = "172.25.10.254"
 PORT = 1234
 BYTES = 1024
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
 server.bind((HOST, PORT))
 server.listen()
+lobby = []
+
+def localPlay(player1, player2):
+    while player2.recv(BYTES).decode() != "Ready":
+        pass
+    if random.randint(0,1) == 0:
+        player1.send("White".encode())
+        player2.send("Black".encode())
+    else:
+        player1.send("Black".encode())
+        player2.send("White".encode())
+    
+    player1Move = ""
+    player2Move = ""
+
+    while True:
+        player1Move = player1.recv(BYTES).decode()
+        player2Move = player2.recv(BYTES).decode()
+
+        if player1Move == "Resign":
+            threading.Thread(target=handler, args=(player1,)).start()
+            player2.send(player1Move.encode())
+            threading.Thread(target=handler, args=(player2,)).start()
+            break
+        else:
+            player1.send(player2Move.encode())
+
+        if player2Move == "Resign":
+            threading.Thread(target=handler, args=(player2,)).start()
+            player1.send(player2Move.encode())
+            threading.Thread(target=handler, args=(player1,)).start()
+            break
+        else:
+            player2.send(player1Move.encode())
 
 def handler(client):
     while True:
@@ -74,6 +110,33 @@ def handler(client):
                 client.send(l.encode())
                 client.recv(BYTES).decode()
                 client.send(h.encode())
+            elif data == "[LOCAL]": 
+                matchFound = False
+                client.send("Starting Local Sequence".encode())
+                for player in lobby:
+                    if player != client: # and settings are compatible
+                        matchFound = True
+                        player2 = player
+                if not matchFound: # if this player is the waiter
+                    lobby.append(client) # add him to the wait list (lobby)
+                    while True: 
+                        data = client.recv(BYTES).decode()
+                        if data != "Stop":
+                            if client in lobby: # check if somone removed him, meaning a match has been found
+                                client.send("Waiting".encode())
+                            else:
+                                client.send("Found Match".encode())
+                                return
+                        else:
+                            lobby.remove(client)
+                            break
+                else:
+                    if client.recv(BYTES).decode() == "Waiting":
+                        lobby.remove(player2)
+                        client.send("Found Match".encode())
+                        client.recv(BYTES).decode() # ready
+                        threading.Thread(target=localPlay, args=(client, player2)).start()
+                        return
         except:
             print("Disconnected")
             break

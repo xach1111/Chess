@@ -1,4 +1,5 @@
-HOST = "192.168.0.36"
+# HOST = "192.168.0.36"
+HOST = "172.25.10.254"
 PORT = 1234
 BYTES = 1024
 
@@ -15,7 +16,7 @@ WKING = "WhiteKing"
 WQUEEN = "WhiteQueen"
 WROOK = "WhiteRook"
 WBISHOP = "WhiteBishop"
-WKNGIHT = "WhiteKnight"
+WKNIGHT = "WhiteKnight"
 WPAWN = "WhitePawn"
 EMPTY = ""
 BKING = "BlackKing"
