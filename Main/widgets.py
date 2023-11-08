@@ -61,6 +61,10 @@ class Button():
 
     def clicked(self):
         return True if self.rect.collidepoint(pygame.mouse.get_pos()) else False
+    
+    def setText(self, text):
+        self.text = text
+        self.renderedText = Button.font.render(self.text, True, self.mColour)
 
 class Label():
     font = pygame.font.SysFont("Montserrat", 30)

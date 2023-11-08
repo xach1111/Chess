@@ -19,14 +19,14 @@ class Game():
             [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
         ]
         # self.board = [
-        #     [EMPTY, EMPTY, EMPTY, EMPTY, Piece(BKING), EMPTY, Piece(BBISHOP), Piece(BPAWN)],
-        #     [EMPTY] * 8,
-        #     [EMPTY] * 8,
-        #     [EMPTY] * 8,
-        #     [EMPTY] * 8,
-        #     [EMPTY] * 8,
-        #     [EMPTY] * 8,
-        #     [EMPTY, EMPTY, EMPTY, EMPTY, Piece(WKING), Piece(WBISHOP), Piece(WPAWN), EMPTY],
+        #     [Piece(BROOK), Piece(BKNIGHT), Piece(BBISHOP), Piece(BQUEEN), Piece(BKING), Piece(BBISHOP), Piece(BKNIGHT), Piece(BROOK)],
+        #     [Piece(BPAWN), Piece(BPAWN), Piece(BPAWN), Piece(BPAWN), EMPTY, Piece(BPAWN), Piece(BPAWN), Piece(BPAWN)],
+        #     [EMPTY, EMPTY, EMPTY, EMPTY, Piece(BPAWN), EMPTY, EMPTY, EMPTY],
+        #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+        #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+        #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, Piece(WPAWN), EMPTY, EMPTY],
+        #     [Piece(WPAWN), Piece(WPAWN), Piece(WPAWN), Piece(WPAWN), Piece(WPAWN), EMPTY, Piece(WPAWN), Piece(WPAWN)],
+        #     [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
         # ]
         self.screen = screen
         self.flipped = False
@@ -54,6 +54,13 @@ class Game():
             [Piece(WPAWN)] * 8,
             [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
         ]]
+        self.moveHistory = []
+        # fools mate
+        # self.startPos, self.endPos = [6, 5],[5,5]
+        # self.makeMove()
+        # self.startPos, self.endPos = [1,4],[2,4]
+        # self.makeMove()
+    
     def drawBoard(self, x, y, d, l ,h):
         self.x = x
         self.y = y
@@ -227,7 +234,9 @@ class Game():
                         if ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 == 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 == 0) or ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 != 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 != 0):
                             self.gameOver = True
                             self.winner = "Draw"
-            
+        
+        self.moveHistory.append([self.startPos, self.endPos])
+
         self.startPos = self.endPos = None
         self.turn = "White" if self.turn == "Black" else "Black"
         
@@ -241,6 +250,7 @@ class Game():
         if len(allMoves) == 0 and self.winner == None:
             self.gameOver = True
             self.winner = "Draw"
+        
         temp = []
         for row in range(8):
             r = []
@@ -696,6 +706,7 @@ class Game():
         if len(self.history) > 1:
             self.history.pop()
             self.variableHistory.pop()
+            self.moveHistory.pop()
             temp = []
             for row in range(8):
                 r = []
