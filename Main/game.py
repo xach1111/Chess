@@ -97,14 +97,16 @@ class Game():
             self.rookButton.draw()
             self.queenButton.draw()
     def action(self):
-        col = (pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE)
-        row = (pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE)
-        if (not self.startPos and not self.endPos) and (row > 7 or col > 7 or row < 0  or col < 0):
-            return
-        if not self.startPos and self.board[row][col] != EMPTY and self.board[row][col].colour == self.turn:
-            self.startPos = [row,col]
-        elif not self.endPos and self.startPos:
-            self.endPos = [row,col]
+        if not self.startPos or (self.startPos and not self.endPos):
+            col = (pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE)
+            row = (pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE)
+            if row > 7 or col > 7 or row < 0  or col < 0:
+                self.startPos = self.endPos = None
+                return
+            if not self.startPos and self.board[row][col] != EMPTY and self.board[row][col].colour == self.turn:
+                self.startPos = [row,col]
+            elif not self.endPos and self.startPos:
+                self.endPos = [row,col]
 
         if self.startPos and self.endPos:
             if (self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.startPos[0] == 1 and self.endPos[0] == 0) or (self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.startPos[0] == 6 and self.endPos[0] == 7):
