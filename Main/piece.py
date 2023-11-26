@@ -18,4 +18,3 @@ class Piece():
             self.value = 1.0
         self.image = pygame.image.load("Assets/" + self.name + ".png").convert_alpha()
         self.moved = False
-    

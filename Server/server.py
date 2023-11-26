@@ -4,11 +4,13 @@ import threading
 import random
 import datetime
 HOST = "192.168.0.36"
-# HOST = "172.25.10.254"
+# HOST = "172.25.3.199"
+
 PORT = 1234
 BYTES = 1024
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+
 server.bind((HOST, PORT))
 server.listen()
 

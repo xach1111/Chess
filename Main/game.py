@@ -55,6 +55,7 @@ class Game():
             [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
         ]]
         self.moveHistory = []
+        self.pgn = ""
         # fools mate
         # self.startPos, self.endPos = [6, 5],[5,5]
         # self.makeMove()
@@ -98,7 +99,7 @@ class Game():
     def action(self):
         col = (pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE)
         row = (pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[1] - self.y) // SQUARESIZE)
-        if (row > 7 or col > 7 or row < 0  or col < 0) and (not self.startPos or not self.endPos):
+        if (not self.startPos and not self.endPos) and (row > 7 or col > 7 or row < 0  or col < 0):
             return
         if not self.startPos and self.board[row][col] != EMPTY and self.board[row][col].colour == self.turn:
             self.startPos = [row,col]
@@ -144,6 +145,11 @@ class Game():
                     return self.action()
 
     def makeMove(self):
+        c = e = False
+        if self.turn == "White":
+            self.pgn = self.pgn + str((len(self.history) + 1) // 2) + "."
+
+        # enpassent handling
         if self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.startPos[0] == 1 and self.endPos[0] == 3:
             self.enpassent = True
             self.enpassentPosition = self.endPos
@@ -153,40 +159,102 @@ class Game():
         else:
             self.enpassent = False
             self.enpassentPosition = None
+
         if self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] - 1:
             if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
-                self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY           
+                e = True
+                self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
+                self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY  
         elif self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] + 1:
             if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
+                e = True
+                self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
                 self.board[self.endPos[0] - 1][self.endPos[1]] = EMPTY
         
+        # castling handling
         if self.board[self.startPos[0]][self.startPos[1]].name == WKING or self.board[self.startPos[0]][self.startPos[1]].name == BKING:
             if self.startPos[1] == 4 and self.endPos[1] == 6:
+                c = True
+                self.pgn = self.pgn + "O-O"
                 self.board[self.startPos[0]][7].moved = True
                 self.board[self.startPos[0]][5], self.board[self.startPos[0]][7] = self.board[self.startPos[0]][7], EMPTY
             if self.startPos[1] == 4 and self.endPos[1] == 2:
+                c = True
+                self.pgn = self.pgn + "O-O-O"
                 self.board[self.startPos[0]][0].moved = True
                 self.board[self.startPos[0]][3], self.board[self.startPos[0]][0] = self.board[self.startPos[0]][0], EMPTY
         
-        
+        if not c and not e:
+            if self.board[self.startPos[0]][self.startPos[1]].name[5:] == "Knight":
+                self.pgn = self.pgn + "N"
+            elif self.board[self.startPos[0]][self.startPos[1]].name[5:] == "Bishop":
+                self.pgn = self.pgn + "B"
+            elif self.board[self.startPos[0]][self.startPos[1]].name[5:] == "Rook":
+                self.pgn = self.pgn + "R"
+            elif self.board[self.startPos[0]][self.startPos[1]].name[5:] == "Queen":
+                self.pgn = self.pgn + "Q"
+            elif self.board[self.startPos[0]][self.startPos[1]].name[5:] == "King":
+                self.pgn = self.pgn + "K"
+            
+            for row in range(8):
+                for col in range(8):
+                    if [row,col] != self.startPos and self.board[row][col] != EMPTY and self.board[row][col].name == self.board[self.startPos[0]][self.startPos[1]].name:
+                        for m in self.fetchMoves([row,col]):
+                            if m[1] == self.endPos:
+                                if col == self.startPos[1]:
+                                    self.pgn = self.pgn + chr(col + 97)
+                                elif row == self.startPos[0]:
+                                    self.pgn = self.pgn + str(8 - row)
+            
+            if self.board[self.endPos[0]][self.endPos[1]] != EMPTY:
+                if self.board[self.startPos[0]][self.startPos[1]].name == WPAWN or self.board[self.startPos[0]][self.startPos[1]].name == BPAWN:
+                    self.pgn = self.pgn + chr(self.startPos[1] + 97) +  "x"
+                else:
+                    self.pgn = self.pgn + "x"
+            
+            self.pgn = self.pgn + self.indexCoordinateTranslate(self.endPos)
+
+        # Promotion handling
         if len(self.endPos) == 3:
+            self.pgn = self.pgn + "="
+            if self.endPos[2][5:] == "Knight":
+                self.pgn = self.pgn + "N"
+            elif self.endPos[2][5:] == "Bishop":
+                self.pgn = self.pgn + "B"
+            elif self.endPos[2][5:] == "Rook":
+                self.pgn = self.pgn + "R"
+            elif self.endPos[2][5:] == "Queen":
+                self.pgn = self.pgn + "Q"
+
             self.board[self.startPos[0]][self.startPos[1]] = Piece(self.endPos[2])
             self.needToPromote = False
+
+
+        #--
         self.board[self.startPos[0]][self.startPos[1]].moved = True
         self.board[self.endPos[0]][self.endPos[1]], self.board[self.startPos[0]][self.startPos[1]] =  self.board[self.startPos[0]][self.startPos[1]], EMPTY
+        
+        
+
+        # check if game over
         if self.turn == "White":
             if self.checkForMate("Black"):
                 self.gameOver = True
                 self.winner = self.turn
+                self.pgn = self.pgn + "#1-0"
         else:
             if self.checkForMate("White"):
                 self.gameOver = True
                 self.winner = self.turn
+                self.pgn = self.pgn + "#0-1"
+        
+        if self.checkForCheck("White" if self.turn == "Black" else "Black") and not self.gameOver:
+            self.pgn = self.pgn + "+"
 
-        numberOfKnights = [0,0]
-        numberOfBishops = [0,0]
-        numberOfRooks = [0,0]
-        numberOfQueens = [0,0]
+        numberOfKnights = [0,0] #[white, black]
+        numberOfBishops = [0,0] #[white, black]
+        numberOfRooks = [0,0]   #[white, black]
+        numberOfQueens = [0,0]  #[white, black]
         numberOfPawns = 0
         for row in self.board:
             for piece in row:
@@ -235,11 +303,14 @@ class Game():
                             self.gameOver = True
                             self.winner = "Draw"
         
+        
+
         self.moveHistory.append([self.startPos, self.endPos])
 
         self.startPos = self.endPos = None
         self.turn = "White" if self.turn == "Black" else "Black"
         
+        # stalemate check
         allMoves = []
         for row in range(8):
             for col in range(8):
@@ -251,6 +322,12 @@ class Game():
             self.gameOver = True
             self.winner = "Draw"
         
+        if self.winner == "Draw":
+            self.pgn = self.pgn + "1/2-1/2"
+        
+        
+        self.pgn = self.pgn + " "
+
         temp = []
         for row in range(8):
             r = []
@@ -264,6 +341,7 @@ class Game():
             temp.append(r)
         self.history.append(temp)
         self.variableHistory.append([copy.deepcopy(self.gameOver), copy.deepcopy(self.winner), copy.deepcopy(self.enpassent), copy.deepcopy(self.enpassentPosition), copy.deepcopy(self.needToPromote), copy.deepcopy(self.promoteToPiece)])
+        print(self.pgn)
 
     def validMoves(self, startPos):
         colour = self.board[startPos[0]][startPos[1]].colour
@@ -723,6 +801,12 @@ class Game():
             self.turn = "White" if self.turn == "Black" else "Black"
             self.startPos = None
             self.endPos = None
+            if len(self.pgn) > 0:
+                self.pgn = self.pgn[:len(self.pgn) - 1]
+            self.pgn = self.pgn
+            while len(self.pgn) > 0 and self.pgn[len(self.pgn)-1] != " ":
+                self.pgn = self.pgn[:len(self.pgn) - 1]
+            print(self.pgn)
         
     def allMoves(self):
         allmoves = []
@@ -733,3 +817,9 @@ class Game():
                     for move in moves:
                         allmoves.append([[row,col], move])
         return allmoves
+
+    def indexCoordinateTranslate(self, data):
+        if type(data) is list: #[row,column] to filerank
+            return chr(data[1] + 97) + str(8 - data[0])
+        else: #filerank to [row,column]
+            return [8 - int(data[1]), ord(data[0]) - 97]
