@@ -252,7 +252,7 @@ def twoPlayer(SCREEN, SERVER, username):
         pygame.display.flip()
     close()
 
-def local(SCREEN, SERVER, username):
+def findMatch(SCREEN, SERVER, username):
     board = Game(SCREEN)
     d, l, h = getColours(SERVER, username)
     label = Label(SCREEN, 1155, 450, "Waiting for players")
@@ -269,55 +269,83 @@ def local(SCREEN, SERVER, username):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if backButton.clicked():
                     SERVER.send("Stop".encode())
+                    SERVER.recv(BYTES).decode()
                     mainMenu(SCREEN, SERVER, username)
                     return
             if event.type == pygame.QUIT:
                 SERVER.send("Stop".encode())
+                SERVER.recv(BYTES).decode()
                 pygame.quit()
                 return
         label.draw()
         backButton.draw()
+
         SERVER.send("Waiting".encode())
-        data = SERVER.recv(BYTES).decode()
-        if data == "Found Match":
+
+        if SERVER.recv(BYTES).decode() == "Match Found":
             run = False
+
         pygame.display.flip()
-    SERVER.send("Ready".encode())
     
+    SERVER.send(username.encode())
     colour = SERVER.recv(BYTES).decode()
     board.flipped = colour == "Black"
     run = True
+    q = False
     while run:
         SCREEN.fill(DARKGREY)
         board.drawBoard(300, 0 ,d, l, h)
-        data = "Waiting"
+        
+        ## data sent = Resign, Waiting or [row, column]
+        datasent = False
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.QUIT:
+                q = True
+                pgn = board.pgn
+                if pgn != "":
+                    while pgn[len(pgn) - 1] == " ":
+                        pgn = pgn[:len(pgn) - 1]
+                    pgn = pgn + "0-1" if colour == "White" else pgn + "1-0"
+                SERVER.send(str(["Resign", pgn]).encode())
+                datasent = True
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 if board.turn == colour:
                     move = board.action()
                     if move:
-                        data = str(move)
+                        SERVER.send(str([move, board.pgn]).encode())
+                        datasent = True
+
                 if backButton.clicked():
-                    SERVER.send("Resign".encode())
-                    mainMenu(SCREEN, SERVER, username)
-                    return
-            if event.type == pygame.QUIT:
-                SERVER.send("Resign".encode())
-                pygame.quit()
-                return
-        SERVER.send(data.encode())
+                    pgn = board.pgn
+                    if pgn != "":
+                        while pgn[len(pgn) - 1] == " ":
+                            pgn = pgn[:len(pgn) - 1]
+                        pgn = pgn + "0-1" if colour == "White" else pgn + "1-0"
+                    SERVER.send(str(["Resign", pgn]).encode())
+                    datasent = True
+        
+        if not datasent:
+            SERVER.send(str(["Waiting", board.pgn]).encode())
+    
+        ## Data recieved
         data = SERVER.recv(BYTES).decode()
-        if data == "Resign":
-            run = False
-        elif data != "Waiting":
-            opponentsMove = eval(data)
-            board.startPos = opponentsMove[0]
-            board.endPos = opponentsMove[1]
-            board.action()
-            if board.gameOver:
-                SERVER.send("Resign".encode())
+
+        if data == "Game Over":
+            if q:
+                close()
+            else:
                 mainMenu(SCREEN, SERVER, username)
                 return
+        
+        elif data[0] == "[": ## if the data recieved is a move
+            opponentsMove = eval(data)
+            board.startPos, board.endPos = opponentsMove[0], opponentsMove[1]
+            board.action()
+            if board.gameOver:
+                mainMenu(SCREEN, SERVER, username)
+                return
+
         backButton.draw()
         pygame.display.flip()
     mainMenu(SCREEN, SERVER, username)
@@ -593,7 +621,6 @@ def adminSettings(SCREEN, SERVER, username, i, j):
     ascendingButton = Button(SCREEN,1125, 250, 250, 100, "Ascending")
     if j == 1:
         ascendingButton.setText("Descending")
-
     if i == 1:
         sortButton.setText("Sort: First Name")
     elif i == 2:
@@ -854,7 +881,7 @@ def mainMenu(SCREEN, SERVER, username):
                     twoPlayer(SCREEN, SERVER, username)
                     return
                 if localButton.clicked():
-                    local(SCREEN, SERVER, username)
+                    findMatch(SCREEN, SERVER, username)
                     return
                 if onePlayerButton.clicked():
                     levelChooser(SCREEN, SERVER, username)

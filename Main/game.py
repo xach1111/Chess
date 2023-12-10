@@ -343,7 +343,6 @@ class Game():
             temp.append(r)
         self.history.append(temp)
         self.variableHistory.append([copy.deepcopy(self.gameOver), copy.deepcopy(self.winner), copy.deepcopy(self.enpassent), copy.deepcopy(self.enpassentPosition), copy.deepcopy(self.needToPromote), copy.deepcopy(self.promoteToPiece)])
-        print(self.pgn)
 
     def validMoves(self, startPos):
         colour = self.board[startPos[0]][startPos[1]].colour
@@ -808,7 +807,6 @@ class Game():
             self.pgn = self.pgn
             while len(self.pgn) > 0 and self.pgn[len(self.pgn)-1] != " ":
                 self.pgn = self.pgn[:len(self.pgn) - 1]
-            print(self.pgn)
         
     def allMoves(self):
         allmoves = []
@@ -823,5 +821,5 @@ class Game():
     def indexCoordinateTranslate(self, data):
         if type(data) is list: #[row,column] to filerank
             return chr(data[1] + 97) + str(8 - data[0])
-        else: #filerank to [row,column]
+        elif type(data) is str: #filerank to [row,column]
             return [8 - int(data[1]), ord(data[0]) - 97]

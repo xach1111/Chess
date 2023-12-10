@@ -3,52 +3,131 @@ import sqlite3
 import threading
 import random
 import datetime
+import time
+from Queue import Queue
+
 HOST = "192.168.0.36"
-# HOST = "172.25.3.199"
+# HOST = "172.25.9.98"
 
 PORT = 1234
 BYTES = 1024
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) ## allows this port to be reused
 
 server.bind((HOST, PORT))
 server.listen()
 
 lobby = []
+def matchMaking():
+    while True:
+        if len(lobby) >= 2:
+            player1 = lobby[0]
+            lobby.remove(player1)
+            player2 = lobby[0]
+            lobby.remove(player2)
+            threading.Thread(target=localPlay, args=(player1, player2)).start()
 
 def localPlay(player1, player2):
-    while player2.recv(BYTES).decode() != "Ready":
-        pass
+    # the threading module can give priority to this thread over the handler thread therefore ...
+    time.sleep(0.5) ## ...makes sure we dont recieve "waiting" and send "match found" before continuing with recieving the username (handler - elif data == "[LOCAL]" - while loop - else statement)
+    p1data = []
+    p2data = []
+    p1data.append(player1.recv(BYTES).decode()) 
+    p2data.append(player2.recv(BYTES).decode()) 
+
     if random.randint(0,1) == 0:
         player1.send("White".encode())
         player2.send("Black".encode())
+        p1data.append("White")
+        p2data.append("Black")
     else:
         player1.send("Black".encode())
         player2.send("White".encode())
+        p1data.append("Black")
+        p2data.append("White ")
     
-    player1Move = ""
-    player2Move = ""
-
     while True:
-        player1Move = player1.recv(BYTES).decode()
-        player2Move = player2.recv(BYTES).decode()
+        player1data = eval(player1.recv(BYTES).decode()) ##[(move(list)/resign(string)/waiting(string)), pgn(string)]
+        player2data = eval(player2.recv(BYTES).decode()) ##[(move(list)/resign(string)/waiting(string)), pgn(string)]
+        p1move = str(player1data[0])
+        p2move = str(player2data[0])
+        
+        ## variable names is w for waiting, m for a move, and r for resign
+        ## for instance, if player 1 sends waiting, and player 2 sends resign, wr would be True
+        ww = p1move == "Waiting" and p2move == "Waiting"
+        mw = p1move[0] == "[" and p2move == "Waiting"
+        wm = p1move == "Waiting" and p2move[0] == "["
+        rw = p1move == "Resign" and p2move == "Waiting"
+        wr = p1move == "Waiting" and p2move == "Resign"
+        rm = p1move == "Resign" and p2move[0] == "["
+        mr = p1move[0] == "[" and p2move == "Resign"
+        rr = p1move == "Resign" and p2move == "Resign" ## very rare due to speed of processor but still a possible
 
-        if player1Move == "Resign":
-            threading.Thread(target=handler, args=(player1,)).start()
-            player2.send(player1Move.encode())
-            threading.Thread(target=handler, args=(player2,)).start()
-            break
+        if rw or rr or rm or mw:
+            pgn = player1data[1]
+        elif wr or mr or rr or wm:
+            pgn = player2data[1]
         else:
-            player1.send(player2Move.encode())
+            pgn = player1data[1]
+        
+        if ww: ## both are waiting
+            player1.send("Waiting".encode())
+            player2.send("Waiting".encode())
 
-        if player2Move == "Resign":
-            threading.Thread(target=handler, args=(player2,)).start()
-            player1.send(player2Move.encode())
+        elif mw: ## player 1 sent a move and player 2 is waiting
+            if len(pgn) >= 3 and pgn[len(pgn) - 2] == "-": ## if the game is over
+                player1.send("Game Over".encode)
+                threading.Thread(target=handler, args=(player1,)).start()
+                player2.send(str(player1data[0]).encode())
+                threading.Thread(target=handler, args=(player2,)).start()
+                saveGame(p1data, p2data, pgn)
+                return
+
+            else:
+                player1.send("Waiting".encode())
+                player2.send(str(player1data[0]).encode())
+        
+        elif wm: ## player 1 is waiting and player 2 sent a move
+            if len(pgn) >= 3 and pgn[len(pgn) - 2] == "-": ## if the game is over
+                player2.send("Game Over".encode)
+                threading.Thread(target=handler, args=(player2,)).start()
+                player1.send(str(player1data[0]).encode())
+                threading.Thread(target=handler, args=(player1,)).start()
+                saveGame(p1data, p2data, pgn)
+                return
+
+            else:
+                player2.send("Waiting".encode())
+                player1.send(str(player2data[0]).encode())
+        
+        elif rw or wr or rr or rm or mr: ## either payer resigned
+            player1.send("Game Over".encode())
             threading.Thread(target=handler, args=(player1,)).start()
-            break
-        else:
-            player2.send(player1Move.encode())
- 
+            player2.send("Game Over".encode())
+            threading.Thread(target=handler, args=(player2,)).start()
+            saveGame(p1data, p2data, pgn)
+            return
+
+def saveGame(p1data, p2data, pgn):
+    con = sqlite3.connect("Chess.db")
+    cursor = con.cursor()
+    sql = "insert into Games (whitePlayerID, blackPlayerID, PGN) values (?,?,?)"
+    if p1data[1] == "White":
+        cursor.execute(sql,(p1data[0], p2data[0], pgn))
+        sql = "SELECT MAX(gameID) FROM Games where whitePlayerID = ? and blackPlayerID = ? and PGN = ?" ## aggregation
+        gameID = cursor.execute(sql, (p1data[0], p2data[0], pgn)).fetchall()[0][0]
+    else:
+        cursor.execute(sql,(p2data[0], p1data[0], pgn))
+        sql = "SELECT MAX(gameID) FROM Games where whitePlayerID = ? and blackPlayerID = ? and PGN = ?" ## aggregation
+        gameID = cursor.execute(sql, (p2data[0], p1data[0], pgn)).fetchall()[0][0]
+    
+    sql = "insert into AccountGameLink (username, gameID) values (?,?)"
+    cursor.execute(sql, (str(p1data[0]), gameID))
+    cursor.execute(sql, (str(p2data[0]), gameID))
+    
+    con.commit()
+    con.close()
+
 def handler(client):
     while True:
         try:
@@ -273,37 +352,26 @@ def handler(client):
                 con.close()
 
             elif data == "[LOCAL]": 
-                matchFound = False
                 client.send("Starting Local Sequence".encode())
-                for player in lobby:
-                    if player != client: # and settings are compatible
-                        matchFound = True
-                        player2 = player
-                if not matchFound: # if this player is the waiter
-                    lobby.append(client) # add him to the wait list (lobby)
-                    while True: 
-                        data = client.recv(BYTES).decode()
-                        if data != "Stop":
-                            if client in lobby: # check if somone removed him, meaning a match has been found
-                                client.send("Waiting".encode())
-                            else:
-                                client.send("Found Match".encode())
-                                return
+                lobby.append(client)
+                while True:
+                    a = client.recv(BYTES).decode()
+                    if  a == "Stop":
+                        client.send("Stopping matchmaking system".encode())
+                        lobby.remove(client)
+                        break
+                    else:
+                        if client not in lobby:
+                            client.send("Match Found".encode())
+                            return
                         else:
-                            lobby.remove(client)
-                            break
-                else:
-                    if client.recv(BYTES).decode() == "Waiting":
-                        lobby.remove(player2)
-                        client.send("Found Match".encode())
-                        client.recv(BYTES).decode() # ready
-                        threading.Thread(target=localPlay, args=(client, player2)).start()
-                        return
+                            client.send("Searching".encode())
 
         except Exception as error:
             print(type(error).__name__, "-", error)
             break
 
+threading.Thread(target=matchMaking).start()
 while True:
     client, addr = server.accept()
     print("connection established")
