@@ -29,60 +29,8 @@ def evaluate(board, colour):
         else:
             return -1000
 
-    knightScores = [[0.0, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1, 0.0],
-                 [0.1, 0.3, 0.5, 0.5, 0.5, 0.5, 0.3, 0.1],
-                 [0.2, 0.5, 0.6, 0.65, 0.65, 0.6, 0.5, 0.2],
-                 [0.2, 0.55, 0.65, 0.7, 0.7, 0.65, 0.55, 0.2],
-                 [0.2, 0.5, 0.65, 0.7, 0.7, 0.65, 0.5, 0.2],
-                 [0.2, 0.55, 0.6, 0.65, 0.65, 0.6, 0.55, 0.2],
-                 [0.1, 0.3, 0.5, 0.55, 0.55, 0.5, 0.3, 0.1],
-                 [0.0, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1, 0.0]]
-
-    bishopScores = [[0.0, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.0],
-                    [0.2, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.2],
-                    [0.2, 0.4, 0.5, 0.6, 0.6, 0.5, 0.4, 0.2],
-                    [0.2, 0.5, 0.5, 0.6, 0.6, 0.5, 0.5, 0.2],
-                    [0.2, 0.4, 0.6, 0.6, 0.6, 0.6, 0.4, 0.2],
-                    [0.2, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.2],
-                    [0.2, 0.5, 0.4, 0.4, 0.4, 0.4, 0.5, 0.2],
-                    [0.0, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.0]]
-
-    rookScores = [[0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25],
-                [0.5, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.5],
-                [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
-                [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
-                [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
-                [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
-                [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
-                [0.25, 0.25, 0.25, 0.5, 0.5, 0.25, 0.25, 0.25]]
-
-    queenScores = [[0.0, 0.2, 0.2, 0.3, 0.3, 0.2, 0.2, 0.0],
-                    [0.2, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.2],
-                    [0.2, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.2],
-                    [0.3, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.3],
-                    [0.4, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.3],
-                    [0.2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.2],
-                    [0.2, 0.4, 0.5, 0.4, 0.4, 0.4, 0.4, 0.2],
-                    [0.0, 0.2, 0.2, 0.3, 0.3, 0.2, 0.2, 0.0]]
-
-    whitePawnScores = [[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
-                [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
-                [0.3, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3, 0.3],
-                [0.25, 0.25, 0.3, 0.45, 0.45, 0.3, 0.25, 0.25],
-                [0.2, 0.2, 0.2, 0.4, 0.4, 0.2, 0.2, 0.2],
-                [0.25, 0.15, 0.1, 0.2, 0.2, 0.1, 0.15, 0.25],
-                [0.25, 0.3, 0.3, 0.0, 0.0, 0.3, 0.3, 0.25],
-                [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]]
-    
-    blackPawnScores = [[0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2],
-                [0.25, 0.3, 0.3, 0.0, 0.0, 0.3, 0.3, 0.25],
-                [0.25, 0.15, 0.1, 0.2, 0.2, 0.1, 0.15, 0.25],
-                [0.2, 0.2, 0.2, 0.4, 0.4, 0.2, 0.2, 0.2],
-                [0.25, 0.25, 0.3, 0.45, 0.45, 0.3, 0.25, 0.25],
-                [0.3, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3, 0.3],
-                [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
-                [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]]
     value = 0
+
     for row in board.board:
         for piece in row:
             if piece != EMPTY:
@@ -90,44 +38,23 @@ def evaluate(board, colour):
                     value = value + piece.value
                 else:
                     value = value - piece.value
+
     for row in range(8):
         for col in range(8):
             if board.board[row][col] != EMPTY:
                 name = board.board[row][col].name
                 thisColour = board.board[row][col].colour
                 if thisColour == colour:
-                    if name == BPAWN:
-                        value = value + blackPawnScores[row][col]
-                    if name == WPAWN:
-                        value = value + whitePawnScores[row][col]
-                    if name == WKNIGHT or name == BKNIGHT:
-                        value = value + knightScores[row][col]
-                    if name == WBISHOP or name == BBISHOP:
-                        value = value + bishopScores[row][col]
-                    if name == WROOK or name == BROOK:
-                        value = value + rookScores[row][col]
-                    if name == WQUEEN or name == BQUEEN:
-                        value = value + queenScores[row][col]
+                    if name != BKING and name != WKING:
+                        value = value + board.board[row][col].positionValue(row,col)
                 else:
                     if thisColour == colour:
-                        if name == BPAWN:
-                            value = value - blackPawnScores[row][col]
-                        if name == WPAWN:
-                            value = value - whitePawnScores[row][col]
-                        if name == WKNIGHT or name == BKNIGHT:
-                            value = value - knightScores[row][col]
-                        if name == WBISHOP or name == BBISHOP:
-                            value = value - bishopScores[row][col]
-                        if name == WROOK or name == BROOK:
-                            value = value - rookScores[row][col]
-                        if name == WQUEEN or name == BQUEEN:
-                            value = value - queenScores[row][col]
-
-    return value
+                        if name != BKING and name != WKING:
+                            value = value - board.board[row][col].positionValue(row,col)
+    return round(value)
 
 def negamax(board, depth, alpha, beta, colour):
-    if depth == 0 or board.winner != "":
-        print(board.moveHistory[2:], "eval: ", round(evaluate(board, colour)), "Colour: ", colour)
+    if depth == 0 or board.gameOver:
         return None, evaluate(board, colour)
     maximum = -100000000
     moves = board.allMoves()
@@ -135,18 +62,16 @@ def negamax(board, depth, alpha, beta, colour):
     for move in moves:
         board.startPos = move[0]
         board.endPos = move[1]
-        board.makeMove()
-        currentMove, value = negamax(board, depth - 1, -alpha, -beta, "White" if colour=="Black" else "Black")
+        board.action()
+        currentMove, value = negamax(board, depth - 1, -beta, -alpha, "White" if colour == "Black" else "Black")
         board.undoMove() 
-        value = -value if depth == 1 else value
-        if value**2 == 1000000:
-            print(value, maximum) 
+        value = -value
         if value > maximum:
             maximum = value
             bestMove = move
         alpha = max(alpha, value)
-        if beta <= alpha:
-            return bestMove, maximum
+        if alpha >= beta:
+            break
     return bestMove, maximum
 
 def onePlayer(SCREEN, SERVER, username, depth):
@@ -181,7 +106,6 @@ def onePlayer(SCREEN, SERVER, username, depth):
         pygame.display.flip()
         if board.turn == AIColour and not board.gameOver:
             move, v = negamax(board, depth, -10000, 10000, AIColour)
-            print(move, v)
             board.startPos = move[0]
             board.endPos = move[1]
             board.action()
@@ -206,10 +130,13 @@ def levelChooser(SCREEN, SERVER, username):
                     return
                 if easy.clicked():
                     onePlayer(SCREEN, SERVER, username, 1)
+                    return
                 elif medium.clicked():
                     onePlayer(SCREEN, SERVER, username, 2)
+                    return
                 elif hard.clicked():
                     onePlayer(SCREEN, SERVER, username, 3)
+                    return
 
             if event.type == pygame.QUIT:
                 run = False
@@ -342,14 +269,139 @@ def findMatch(SCREEN, SERVER, username):
             opponentsMove = eval(data)
             board.startPos, board.endPos = opponentsMove[0], opponentsMove[1]
             board.action()
-            if board.gameOver:
-                mainMenu(SCREEN, SERVER, username)
-                return
 
         backButton.draw()
         pygame.display.flip()
     mainMenu(SCREEN, SERVER, username)
 
+def pgnToOutcome(colour, pgn):
+    if pgn[len(pgn) - 1] == "1/2":
+        return "Draw"
+    
+    if (colour == "White" and pgn[len(pgn) - 1] == "0") or (colour == "Black" and pgn[len(pgn) - 1] == "1"):
+        return "Won"
+
+    return "Lost"
+
+def pgntomoves(SCREEN, pgn):
+    board = Game(SCREEN)
+    moves = []
+    pgn = pgn.split()
+    stack = []
+    for move in pgn:
+        stack.append(move)
+        for m in board.allMoves():
+            board.startPos = m[0]
+            board.endPos = m[1]
+            board.action()
+            if board.pgn.split() == stack:
+                moves.append([m[0], m[1]])
+                break
+            else:
+                board.undoMove()
+    
+    return moves
+
+def viewGame(SCREEN, SERVER, username, gamedata):
+    board = Game(SCREEN)
+    d, l, h = getColours(SERVER, username)
+    backButton = Button(SCREEN, 1110, 650, 280, 100, "Back")
+    nextButton = Button(SCREEN, 1110, 525, 280, 100, "Next")
+    previousButton = Button(SCREEN, 10, 525, 280, 100, "Previous")
+    flipButton = Button(SCREEN, 10, 650, 280, 100, "Flip")
+    label1 = Label(SCREEN, 10, 10, "White: "+gamedata[0])
+    label2 = Label(SCREEN, 10, 40, "Black: "+gamedata[1])
+    board.flipped = username == gamedata[1]
+    moves = pgntomoves(SCREEN, gamedata[2])
+    index = 0
+    run = True
+    while run:
+        SCREEN.fill(DARKGREY)
+        board.drawBoard(300, 0, d, l, h)
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if backButton.clicked():
+                    archive(SCREEN, SERVER, username)
+                    return
+                if nextButton.clicked():
+                    if index < len(moves):
+                        board.startPos, board.endPos = moves[index][0], moves[index][1]
+                        board.action()
+                        index += 1
+                if previousButton.clicked():
+                    if index > 0:
+                        board.undoMove()
+                        index -= 1
+                if flipButton.clicked():
+                    board.flipped = not board.flipped
+            if event.type == pygame.QUIT:
+                run = False
+
+        flipButton.draw()
+        previousButton.draw()
+        nextButton.draw()
+        backButton.draw()
+        label1.draw()
+        label2.draw()
+        pygame.display.flip()
+    close()
+    
+def archive(SCREEN, SERVER, username):
+    page = 1
+    backButton = Button(SCREEN, 450,650,500,100, "Back")
+    previousButton = Button(SCREEN, 300, 535, 400, 60, "Previous")
+    nextButton = Button(SCREEN, 700, 535, 400, 60, "Next")
+
+    SERVER.send("[FETCHGAMES]".encode())
+    SERVER.recv(BYTES).decode()
+    SERVER.send(username.encode())
+    gamedata = eval(SERVER.recv(BYTES).decode())
+
+    buttons = []
+    index = 0
+    count = 0
+    
+    while index != len(gamedata):
+        if gamedata[index][0] == username:
+            buttons.append(Button(SCREEN, 300, 55 + (count * 60), 800, 60, str([gamedata[index][0], gamedata[index][1], pgnToOutcome("White", gamedata[index][2])])))
+            buttons[len(buttons) - 1].text = gamedata[index]
+        else:
+            buttons.append(Button(SCREEN, 300, 55 + (count * 60), 800, 60, str([gamedata[index][0], gamedata[index][1], pgnToOutcome("Black", gamedata[index][2])])))
+            buttons[len(buttons) - 1].text = gamedata[index]
+        index += 1
+        count += 1
+        if count == 8:
+            count = 0
+    
+    run = True
+    while run:
+        SCREEN.fill(DARKGREY)
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if nextButton.clicked():
+                    page = page + 1 if page < (len(gamedata) / 6) else page
+                if previousButton.clicked():
+                    page = page - 1 if page != 1 else page
+                if backButton.clicked():
+                    mainMenu(SCREEN, SERVER, username)
+                    return
+                for button in range(len(buttons)): #only check buttons which are displayed on the page
+                    if button < 8 * page and button >= 8 * (page -1) and buttons[button].clicked():
+                        viewGame(SCREEN, SERVER, username, buttons[button].text)
+                        return
+
+            if event.type == pygame.QUIT:
+                run = False
+
+        previousButton.draw()
+        nextButton.draw()
+        backButton.draw()
+        for button in range(len(buttons)):
+            if button >= 8 * (page - 1) and button < 8 * page:
+                buttons[button].draw()
+        pygame.display.flip()
+    close()
+    
 def rules(SCREEN, SERVER, username):
     rulesImage = pygame.image.load("Assets/Rules.png").convert_alpha()
     backButton = Button(SCREEN, 1110, 650, 280, 100, "Back")
@@ -885,6 +937,9 @@ def mainMenu(SCREEN, SERVER, username):
                     return
                 if onePlayerButton.clicked():
                     levelChooser(SCREEN, SERVER, username)
+                    return
+                if archiveButton.clicked():
+                    archive(SCREEN, SERVER, username)
                     return
                 if themesButton.clicked():
                     themes(SCREEN, SERVER, username)

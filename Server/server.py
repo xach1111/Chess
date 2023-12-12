@@ -75,10 +75,10 @@ def localPlay(player1, player2):
             player2.send("Waiting".encode())
 
         elif mw: ## player 1 sent a move and player 2 is waiting
-            if len(pgn) >= 3 and pgn[len(pgn) - 2] == "-": ## if the game is over
-                player1.send("Game Over".encode)
+            if len(pgn) >= 3 and pgn[len(pgn) - 3] == "-": ## if the game is over 
+                player1.send("Game Over".encode())
                 threading.Thread(target=handler, args=(player1,)).start()
-                player2.send(str(player1data[0]).encode())
+                player2.send("Game Over".encode())
                 threading.Thread(target=handler, args=(player2,)).start()
                 saveGame(p1data, p2data, pgn)
                 return
@@ -88,10 +88,10 @@ def localPlay(player1, player2):
                 player2.send(str(player1data[0]).encode())
         
         elif wm: ## player 1 is waiting and player 2 sent a move
-            if len(pgn) >= 3 and pgn[len(pgn) - 2] == "-": ## if the game is over
-                player2.send("Game Over".encode)
+            if len(pgn) >= 3 and pgn[len(pgn) - 3] == "-": ## if the game is over
+                player2.send("Game Over".encode())
                 threading.Thread(target=handler, args=(player2,)).start()
-                player1.send(str(player1data[0]).encode())
+                player1.send("Game Over".encode())
                 threading.Thread(target=handler, args=(player1,)).start()
                 saveGame(p1data, p2data, pgn)
                 return
@@ -367,6 +367,19 @@ def handler(client):
                         else:
                             client.send("Searching".encode())
 
+            elif data == "[FETCHGAMES]":
+                client.send("Username?".encode())
+                username = client.recv(BYTES).decode()
+                con = sqlite3.connect("Chess.db")
+                cursor = con.cursor()
+                sql = "SELECT whitePlayerID, blackPlayerID, PGN from Games INNER JOIN AccountGameLink on  Games.gameID = AccountGameLink.gameID WHERE username = ?"
+                data = cursor.execute(sql, username).fetchall()
+                con.commit()
+                con.close()
+                result = []
+                for game in data:
+                    result.append([attribute for attribute in game])
+                client.send(str(result).encode())
         except Exception as error:
             print(type(error).__name__, "-", error)
             break

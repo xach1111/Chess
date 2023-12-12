@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from piece import Piece
+from piece import Pawn, Knight, Bishop, Rook, Queen, King
 from widgets import Button
 import copy
 pygame.init()
@@ -9,25 +9,16 @@ pygame.init()
 class Game():
     def __init__(self, screen):
         self.board = [
-            [Piece(BROOK), Piece(BKNIGHT), Piece(BBISHOP), Piece(BQUEEN), Piece(BKING), Piece(BBISHOP), Piece(BKNIGHT), Piece(BROOK)],
-            [Piece(BPAWN)] * 8,
+            [Rook("Black"), Knight("Black"), Bishop("Black"), Queen("Black"), King("Black"), Bishop("Black"), Knight("Black"), Rook("Black")],
+            [Pawn("Black")] * 8,
             [EMPTY] * 8,
             [EMPTY] * 8,
             [EMPTY] * 8,
             [EMPTY] * 8,
-            [Piece(WPAWN)] * 8,
-            [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
+            [Pawn("White")] * 8,
+            [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")],
         ]
-        # self.board = [
-        #     [Piece(BROOK), Piece(BKNIGHT), Piece(BBISHOP), Piece(BQUEEN), Piece(BKING), Piece(BBISHOP), Piece(BKNIGHT), Piece(BROOK)],
-        #     [Piece(BPAWN), Piece(BPAWN), Piece(BPAWN), Piece(BPAWN), EMPTY, Piece(BPAWN), Piece(BPAWN), Piece(BPAWN)],
-        #     [EMPTY, EMPTY, EMPTY, EMPTY, Piece(BPAWN), EMPTY, EMPTY, EMPTY],
-        #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-        #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
-        #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, Piece(WPAWN), EMPTY, EMPTY],
-        #     [Piece(WPAWN), Piece(WPAWN), Piece(WPAWN), Piece(WPAWN), Piece(WPAWN), EMPTY, Piece(WPAWN), Piece(WPAWN)],
-        #     [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
-        # ]
+
         self.screen = screen
         self.flipped = False
         self.turn = "White"
@@ -45,14 +36,14 @@ class Game():
         self.queenButton = Button(screen, 500, 400, 400, 100, "Queen", BLACK)
         self.variableHistory = [[False, "", False, None, False, None]] #gameover, winner, enpassant, enpassent position, needtopromote, promote to piece
         self.history = [[
-            [Piece(BROOK), Piece(BKNIGHT), Piece(BBISHOP), Piece(BQUEEN), Piece(BKING), Piece(BBISHOP), Piece(BKNIGHT), Piece(BROOK)],
-            [Piece(BPAWN)] * 8,
+            [Rook("Black"), Knight("Black"), Bishop("Black"), Queen("Black"), King("Black"), Bishop("Black"), Knight("Black"), Rook("Black")],
+            [Pawn("Black")] * 8,
             [EMPTY] * 8,
             [EMPTY] * 8,
             [EMPTY] * 8,
             [EMPTY] * 8,
-            [Piece(WPAWN)] * 8,
-            [Piece(WROOK), Piece(WKNIGHT), Piece(WBISHOP), Piece(WQUEEN), Piece(WKING), Piece(WBISHOP), Piece(WKNIGHT), Piece(WROOK)],
+            [Pawn("White")] * 8,
+            [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")],
         ]]
         self.moveHistory = []
         self.pgn = ""
@@ -61,7 +52,7 @@ class Game():
         # self.makeMove()
         # self.startPos, self.endPos = [1,4],[2,4]
         # self.makeMove()
-    
+
     def drawBoard(self, x, y, d, l ,h):
         self.x = x
         self.y = y
@@ -96,6 +87,7 @@ class Game():
             self.bishopButton.draw()
             self.rookButton.draw()
             self.queenButton.draw()
+
     def action(self):
         if not self.startPos or (self.startPos and not self.endPos):
             col = (pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE if not self.flipped else 7 - ((pygame.mouse.get_pos()[0] - self.x) // SQUARESIZE)
@@ -147,44 +139,33 @@ class Game():
                     return self.action()
 
     def makeMove(self):
-        c = e = False
+        c = c1  = c2 = e = e1 = e2 = False
         if self.turn == "White":
             self.pgn = self.pgn + str((len(self.history) + 1) // 2) + "."
 
-        # enpassent handling
-        if self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.startPos[0] == 1 and self.endPos[0] == 3:
-            self.enpassent = True
-            self.enpassentPosition = self.endPos
-        elif self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.startPos[0] == 6 and self.endPos[0] == 4:
-            self.enpassent = True
-            self.enpassentPosition = self.endPos
-        else:
-            self.enpassent = False
-            self.enpassentPosition = None
+        
 
         if self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] - 1:
             if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
                 e = True
-                self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
-                self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY  
+                e1 = True
+                  
         elif self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] + 1:
             if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
                 e = True
-                self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
-                self.board[self.endPos[0] - 1][self.endPos[1]] = EMPTY
+                e2 = True
+
+        
         
         # castling handling
         if self.board[self.startPos[0]][self.startPos[1]].name == WKING or self.board[self.startPos[0]][self.startPos[1]].name == BKING:
             if self.startPos[1] == 4 and self.endPos[1] == 6:
                 c = True
-                self.pgn = self.pgn + "O-O"
-                self.board[self.startPos[0]][7].moved = True
-                self.board[self.startPos[0]][5], self.board[self.startPos[0]][7] = self.board[self.startPos[0]][7], EMPTY
+                c1 = True
             if self.startPos[1] == 4 and self.endPos[1] == 2:
                 c = True
-                self.pgn = self.pgn + "O-O-O"
-                self.board[self.startPos[0]][0].moved = True
-                self.board[self.startPos[0]][3], self.board[self.startPos[0]][0] = self.board[self.startPos[0]][0], EMPTY
+                c2 = True
+                
         
         if not c and not e:
             if self.board[self.startPos[0]][self.startPos[1]].name[5:] == "Knight":
@@ -215,7 +196,32 @@ class Game():
                     self.pgn = self.pgn + "x"
             
             self.pgn = self.pgn + self.indexCoordinateTranslate(self.endPos)
+        
+        if c1:
+            self.pgn = self.pgn + "O-O"
+            self.board[self.startPos[0]][7].moved = True
+            self.board[self.startPos[0]][5], self.board[self.startPos[0]][7] = self.board[self.startPos[0]][7], EMPTY
+        if c2:
+            self.pgn = self.pgn + "O-O-O"
+            self.board[self.startPos[0]][0].moved = True
+            self.board[self.startPos[0]][3], self.board[self.startPos[0]][0] = self.board[self.startPos[0]][0], EMPTY
+        if e1:
+            self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
+            self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY
+        if e2:
+            self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
+            self.board[self.endPos[0] - 1][self.endPos[1]] = EMPTY
 
+        # enpassent handling
+        if self.board[self.startPos[0]][self.startPos[1]].name == BPAWN and self.startPos[0] == 1 and self.endPos[0] == 3:
+            self.enpassent = True
+            self.enpassentPosition = self.endPos
+        elif self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.startPos[0] == 6 and self.endPos[0] == 4:
+            self.enpassent = True
+            self.enpassentPosition = self.endPos
+        else:
+            self.enpassent = False
+            self.enpassentPosition = None   
         # Promotion handling
         if len(self.endPos) == 3:
             self.pgn = self.pgn + "="
@@ -228,16 +234,22 @@ class Game():
             elif self.endPos[2][5:] == "Queen":
                 self.pgn = self.pgn + "Q"
 
-            self.board[self.startPos[0]][self.startPos[1]] = Piece(self.endPos[2])
+            if self.endPos[2][5:] == "Pawn":
+                self.board[self.startPos[0]][self.startPos[1]] = Pawn(self.endPos[2][:5])
+            elif self.endPos[2][5:] == "Knight":
+                self.board[self.startPos[0]][self.startPos[1]] = Knight(self.endPos[2][:5])
+            elif self.endPos[2][5:] == "Bishop":
+                self.board[self.startPos[0]][self.startPos[1]] = Bishop(self.endPos[2][:5])
+            elif self.endPos[2][5:] == "Rook":
+                self.board[self.startPos[0]][self.startPos[1]] = Rook(self.endPos[2][:5])
+            elif self.endPos[2][5:] == "Queen":
+                self.board[self.startPos[0]][self.startPos[1]] = Queen(self.endPos[2][:5])
             self.needToPromote = False
-
 
         #--
         self.board[self.startPos[0]][self.startPos[1]].moved = True
         self.board[self.endPos[0]][self.endPos[1]], self.board[self.startPos[0]][self.startPos[1]] =  self.board[self.startPos[0]][self.startPos[1]], EMPTY
         
-        
-
         # check if game over
         if self.turn == "White":
             if self.checkForMate("Black"):
@@ -304,8 +316,6 @@ class Game():
                         if ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 == 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 == 0) or ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 != 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 != 0):
                             self.gameOver = True
                             self.winner = "Draw"
-        
-        
 
         self.moveHistory.append([self.startPos, self.endPos])
 
@@ -337,7 +347,18 @@ class Game():
                 if self.board[row][col] == EMPTY:
                     r.append(EMPTY)
                 else:
-                    r.append(Piece(self.board[row][col].name))
+                    if self.board[row][col].name[5:] == "Pawn":
+                        r.append(Pawn(self.board[row][col].name[:5]))
+                    elif self.board[row][col].name[5:] == "Knight":
+                        r.append(Knight(self.board[row][col].name[:5]))
+                    elif self.board[row][col].name[5:] == "Bishop":
+                        r.append(Bishop(self.board[row][col].name[:5]))
+                    elif self.board[row][col].name[5:] == "Rook":
+                        r.append(Rook(self.board[row][col].name[:5]))
+                    elif self.board[row][col].name[5:] == "Queen":
+                        r.append(Queen(self.board[row][col].name[:5]))
+                    elif self.board[row][col].name[5:] == "King":
+                        r.append(King(self.board[row][col].name[:5]))
                     if self.board[row][col].moved:
                         r[len(r) - 1].moved = True
             temp.append(r)
@@ -793,7 +814,18 @@ class Game():
                     if self.history[len(self.history) - 1][row][col] == EMPTY:
                         r.append(EMPTY)
                     else:
-                        r.append(Piece(self.history[len(self.history) - 1][row][col].name))
+                        if self.history[len(self.history) - 1][row][col].name[5:] == "Pawn":
+                            r.append(Pawn(self.history[len(self.history) - 1][row][col].name[:5]))
+                        elif self.history[len(self.history) - 1][row][col].name[5:] == "Knight":
+                            r.append(Knight(self.history[len(self.history) - 1][row][col].name[:5]))
+                        elif self.history[len(self.history) - 1][row][col].name[5:] == "Bishop":
+                            r.append(Bishop(self.history[len(self.history) - 1][row][col].name[:5]))
+                        elif self.history[len(self.history) - 1][row][col].name[5:] == "Rook":
+                            r.append(Rook(self.history[len(self.history) - 1][row][col].name[:5]))
+                        elif self.history[len(self.history) - 1][row][col].name[5:] == "Queen":
+                            r.append(Queen(self.history[len(self.history) - 1][row][col].name[:5]))
+                        elif self.history[len(self.history) - 1][row][col].name[5:] == "King":
+                            r.append(King(self.history[len(self.history) - 1][row][col].name[:5]))
                         if self.history[len(self.history) - 1][row][col].moved:
                             r[len(r) - 1].moved = True
                 temp.append(r)
