@@ -6,8 +6,8 @@ import datetime
 import time
 from Queue import Queue
 
-HOST = "192.168.0.36"
-# HOST = "172.25.9.98"
+# HOST = "192.168.0.36"
+HOST = "172.25.9.98"
 
 PORT = 1234
 BYTES = 1024
