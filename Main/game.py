@@ -3,6 +3,7 @@ from constants import *
 from piece import Pawn, Knight, Bishop, Rook, Queen, King
 from widgets import Button
 import copy
+from Stack import Stack
 pygame.init()
 
 
@@ -16,7 +17,7 @@ class Game():
             [EMPTY] * 8,
             [EMPTY] * 8,
             [Pawn("White")] * 8,
-            [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")],
+            [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")]
         ]
 
         self.screen = screen
@@ -43,10 +44,11 @@ class Game():
             [EMPTY] * 8,
             [EMPTY] * 8,
             [Pawn("White")] * 8,
-            [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")],
+            [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")]
         ]]
-        self.moveHistory = []
+        self.moveHistory = Stack()
         self.pgn = ""
+        self.capturedPieces = []
         # fools mate
         # self.startPos, self.endPos = [6, 5],[5,5]
         # self.makeMove()
@@ -67,12 +69,17 @@ class Game():
                     pygame.draw.rect(self.screen, d, pygame.rect.Rect(x + col * SQUARESIZE, y + row * SQUARESIZE, SQUARESIZE, SQUARESIZE))
                 else:
                     pygame.draw.rect(self.screen, l, pygame.rect.Rect(x + col * SQUARESIZE, y + row * SQUARESIZE, SQUARESIZE, SQUARESIZE))
+        
+        # last move
+        if not self.moveHistory.isEmpty() > 0:
+            pygame.draw.rect(self.screen, PREVMOVE, pygame.rect.Rect(x + self.moveHistory.peak()[0][1] * SQUARESIZE, y + self.moveHistory.peak()[0][0] * SQUARESIZE, SQUARESIZE, SQUARESIZE)) if not self.flipped else pygame.draw.rect(self.screen, PREVMOVE, pygame.rect.Rect(x +  7 * SQUARESIZE - (self.moveHistory.peak()[0][1] * SQUARESIZE), y + 7 * SQUARESIZE - (self.moveHistory.peak()[0][0] * SQUARESIZE), SQUARESIZE, SQUARESIZE))
+            pygame.draw.rect(self.screen, PREVMOVE, pygame.rect.Rect(x + self.moveHistory.peak()[1][1] * SQUARESIZE, y + self.moveHistory.peak()[1][0] * SQUARESIZE, SQUARESIZE, SQUARESIZE)) if not self.flipped else pygame.draw.rect(self.screen, PREVMOVE, pygame.rect.Rect(x + 7 * SQUARESIZE - (self.moveHistory.peak()[1][1] * SQUARESIZE), y + 7 * SQUARESIZE - (self.moveHistory.peak()[1][0] * SQUARESIZE), SQUARESIZE, SQUARESIZE))
 
         # Pieces
         for row in range(8):
             for col in range(8):
                 if self.board[row][col] != EMPTY:
-                    self.screen.blit(self.board[row][col].image, (x + col * SQUARESIZE, y + row * SQUARESIZE)) if not self.flipped else self.screen.blit(self.board[row][col].image, (WIDTH - (x + col * SQUARESIZE) - SQUARESIZE, HEIGHT - (y + row * SQUARESIZE) - SQUARESIZE))
+                    self.screen.blit(self.board[row][col].image, (x + col * SQUARESIZE, y + row * SQUARESIZE)) if not self.flipped else self.screen.blit(self.board[row][col].image, (WIDTH - (x + col * SQUARESIZE) - SQUARESIZE, HEIGHT - (y + row * SQUARESIZE) - SQUARESIZE)) 
 
         # Highlights
         if self.startPos:
@@ -154,8 +161,6 @@ class Game():
             if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
                 e = True
                 e2 = True
-
-        
         
         # castling handling
         if self.board[self.startPos[0]][self.startPos[1]].name == WKING or self.board[self.startPos[0]][self.startPos[1]].name == BKING:
@@ -165,7 +170,6 @@ class Game():
             if self.startPos[1] == 4 and self.endPos[1] == 2:
                 c = True
                 c2 = True
-                
         
         if not c and not e:
             if self.board[self.startPos[0]][self.startPos[1]].name[5:] == "Knight":
@@ -207,9 +211,11 @@ class Game():
             self.board[self.startPos[0]][3], self.board[self.startPos[0]][0] = self.board[self.startPos[0]][0], EMPTY
         if e1:
             self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
+            self.capturedPieces.append([self.board[self.endPos[0] + 1][self.endPos[1]].image, self.board[self.endPos[0] + 1][self.endPos[1]].name])
             self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY
         if e2:
             self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
+            self.capturedPieces.append([self.board[self.endPos[0] - 1][self.endPos[1]].image,self.board[self.endPos[0] - 1][self.endPos[1]].name])
             self.board[self.endPos[0] - 1][self.endPos[1]] = EMPTY
 
         # enpassent handling
@@ -248,6 +254,8 @@ class Game():
 
         #--
         self.board[self.startPos[0]][self.startPos[1]].moved = True
+        if self.board[self.endPos[0]][self.endPos[1]] != EMPTY:
+            self.capturedPieces.append([self.board[self.endPos[0]][self.endPos[1]].image, self.board[self.endPos[0]][self.endPos[1]].name])
         self.board[self.endPos[0]][self.endPos[1]], self.board[self.startPos[0]][self.startPos[1]] =  self.board[self.startPos[0]][self.startPos[1]], EMPTY
         
         # check if game over
@@ -317,7 +325,7 @@ class Game():
                             self.gameOver = True
                             self.winner = "Draw"
 
-        self.moveHistory.append([self.startPos, self.endPos])
+        self.moveHistory.push([self.startPos, self.endPos])
 
         self.startPos = self.endPos = None
         self.turn = "White" if self.turn == "Black" else "Black"

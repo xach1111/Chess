@@ -5,6 +5,7 @@ from game import Game
 import socket
 import random
 from Stack import Stack
+import re
 
 def close():
     pygame.quit()
@@ -53,7 +54,7 @@ def evaluate(board, colour):
                             value = value - board.board[row][col].positionValue(row,col)
     return round(value)
 
-def negamax(board, depth, alpha, beta, colour):
+def negamax(board, depth, alpha, beta, colour): ## algorithm to find the best move. depth = how many moves ahead the algorithm will look at
     if depth == 0 or board.gameOver:
         return None, evaluate(board, colour)
     maximum = -100000000
@@ -355,7 +356,9 @@ def archive(SCREEN, SERVER, username):
     SERVER.send("[FETCHGAMES]".encode())
     SERVER.recv(BYTES).decode()
     SERVER.send(username.encode())
-    gamedata = eval(SERVER.recv(BYTES).decode())
+    bits = int(SERVER.recv(BYTES).decode())
+    SERVER.send("Ready".encode())
+    gamedata = eval(SERVER.recv(bits).decode())
 
     buttons = []
     index = 0

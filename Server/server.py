@@ -6,8 +6,8 @@ import datetime
 import time
 from Queue import Queue
 
-# HOST = "192.168.0.36"
-HOST = "172.25.9.98"
+HOST = "192.168.0.36"
+# HOST = "172.25.9.98"
 
 PORT = 1234
 BYTES = 1024
@@ -38,7 +38,7 @@ def localPlay(player1, player2):
     if random.randint(0,1) == 0:
         player1.send("White".encode())
         player2.send("Black".encode())
-        p1data.append("White")
+        p1data.append("White") 
         p2data.append("Black")
     else:
         player1.send("Black".encode())
@@ -379,6 +379,9 @@ def handler(client):
                 result = []
                 for game in data:
                     result.append([attribute for attribute in game])
+                # it is likely that the number of bit that contain every game played is too large, so a header is sent first
+                client.send(str(len(str(result).encode())).encode()) # sends the number of bits being sent over
+                client.recv(BYTES).decode()
                 client.send(str(result).encode())
         except Exception as error:
             print(type(error).__name__, "-", error)
