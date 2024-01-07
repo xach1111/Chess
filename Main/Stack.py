@@ -1,4 +1,4 @@
-class Stack:
+class Stack: ## Dynamic - linked lists
     class Node:
         def __init__(self, data, next):
             self.data = data

@@ -6,7 +6,6 @@ import copy
 from Stack import Stack
 pygame.init()
 
-
 class Game():
     def __init__(self, screen):
         self.board = [
@@ -19,7 +18,6 @@ class Game():
             [Pawn("White")] * 8,
             [Rook("White"), Knight("White"), Bishop("White"), Queen("White"), King("White"), Bishop("White"), Knight("White"), Rook("White")]
         ]
-
         self.screen = screen
         self.flipped = False
         self.turn = "White"
@@ -48,7 +46,9 @@ class Game():
         ]]
         self.moveHistory = Stack()
         self.pgn = ""
-        self.capturedPieces = []
+        self.halfMoveClock = Stack()
+        self.halfMoveClock.push(0)
+        self.fullMoveClock  = 1
         # fools mate
         # self.startPos, self.endPos = [6, 5],[5,5]
         # self.makeMove()
@@ -146,11 +146,19 @@ class Game():
                     return self.action()
 
     def makeMove(self):
+        # FEN values--
+        if (self.board[self.startPos[0]][self.startPos[1]].name == WPAWN or self.board[self.startPos[0]][self.startPos[1]].name == BPAWN) or (self.board[self.endPos[0]][self.endPos[1]] != EMPTY): ## if a pawn move was made, or a piece was captured
+            self.halfMoveClock.push(0)
+        else:
+            self.halfMoveClock.push(self.halfMoveClock.peak() + 1)
+
+        if self.turn == "Black":
+            self.fullMoveClock += 1
+        # --
+
         c = c1  = c2 = e = e1 = e2 = False
         if self.turn == "White":
             self.pgn = self.pgn + str((len(self.history) + 1) // 2) + "."
-
-        
 
         if self.board[self.startPos[0]][self.startPos[1]].name == WPAWN and self.board[self.endPos[0]][self.endPos[1]] == EMPTY and self.endPos[0] == self.startPos[0] - 1:
             if self.endPos[1] == self.startPos[1] - 1 or self.endPos[1] == self.startPos[1] + 1:
@@ -187,11 +195,11 @@ class Game():
                 for col in range(8):
                     if [row,col] != self.startPos and self.board[row][col] != EMPTY and self.board[row][col].name == self.board[self.startPos[0]][self.startPos[1]].name:
                         for m in self.fetchMoves([row,col]):
-                            if m[1] == self.endPos:
-                                if col == self.startPos[1]:
-                                    self.pgn = self.pgn + chr(col + 97)
-                                elif row == self.startPos[0]:
-                                    self.pgn = self.pgn + str(8 - row)
+                            if m == self.endPos:
+                                if col != self.startPos[1]:
+                                    self.pgn = self.pgn + chr(self.startPos[1] + 97)
+                                elif row != self.startPos[0]:
+                                    self.pgn = self.pgn + str(8 - self.startPos[0])
             
             if self.board[self.endPos[0]][self.endPos[1]] != EMPTY:
                 if self.board[self.startPos[0]][self.startPos[1]].name == WPAWN or self.board[self.startPos[0]][self.startPos[1]].name == BPAWN:
@@ -211,11 +219,9 @@ class Game():
             self.board[self.startPos[0]][3], self.board[self.startPos[0]][0] = self.board[self.startPos[0]][0], EMPTY
         if e1:
             self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
-            self.capturedPieces.append([self.board[self.endPos[0] + 1][self.endPos[1]].image, self.board[self.endPos[0] + 1][self.endPos[1]].name])
             self.board[self.endPos[0] + 1][self.endPos[1]] = EMPTY
         if e2:
             self.pgn = self.pgn + chr(self.startPos[1] + 97) + "x" + self.indexCoordinateTranslate(self.endPos)
-            self.capturedPieces.append([self.board[self.endPos[0] - 1][self.endPos[1]].image,self.board[self.endPos[0] - 1][self.endPos[1]].name])
             self.board[self.endPos[0] - 1][self.endPos[1]] = EMPTY
 
         # enpassent handling
@@ -228,6 +234,7 @@ class Game():
         else:
             self.enpassent = False
             self.enpassentPosition = None   
+        
         # Promotion handling
         if len(self.endPos) == 3:
             self.pgn = self.pgn + "="
@@ -254,8 +261,6 @@ class Game():
 
         #--
         self.board[self.startPos[0]][self.startPos[1]].moved = True
-        if self.board[self.endPos[0]][self.endPos[1]] != EMPTY:
-            self.capturedPieces.append([self.board[self.endPos[0]][self.endPos[1]].image, self.board[self.endPos[0]][self.endPos[1]].name])
         self.board[self.endPos[0]][self.endPos[1]], self.board[self.startPos[0]][self.startPos[1]] =  self.board[self.startPos[0]][self.startPos[1]], EMPTY
         
         # check if game over
@@ -275,8 +280,8 @@ class Game():
 
         numberOfKnights = [0,0] #[white, black]
         numberOfBishops = [0,0] #[white, black]
-        numberOfRooks = [0,0]   #[white, black]
-        numberOfQueens = [0,0]  #[white, black]
+        numberOfRooks = 0
+        numberOfQueens = 0
         numberOfPawns = 0
         for row in self.board:
             for piece in row:
@@ -291,42 +296,39 @@ class Game():
                         numberOfBishops[0] += 1
                     elif piece.name == BBISHOP:
                         numberOfBishops[1] += 1
-                    elif piece.name == WROOK:
-                        numberOfRooks[0] += 1
-                    elif piece.name == BROOK:
-                        numberOfRooks[1] += 1
-                    elif piece.name == WQUEEN:
-                        numberOfQueens[0] += 1
-                    elif piece.name == BQUEEN:
-                        numberOfQueens[1] += 1
+                    elif piece.name == WROOK or piece.name == BROOK:
+                        numberOfRooks += 1
+                    elif piece.name == WQUEEN or piece.name == BQUEEN:
+                        numberOfQueens += 1
         
-        if numberOfPawns == 0:
-            if numberOfQueens[0] == 0 and numberOfQueens[1] == 0 and numberOfRooks[0] == 0 and numberOfRooks[1] == 0:
-                if numberOfBishops[0] == 0 and numberOfBishops[1] == 0 and numberOfKnights[0] == 0 and numberOfKnights[1] == 0:
+        if numberOfPawns == 0 and numberOfQueens == 0 and numberOfRooks == 0:
+            if numberOfBishops[0] == 0 and numberOfBishops[1] == 0 and numberOfKnights[0] == 0 and numberOfKnights[1] == 0: ## king vs king
+                self.gameOver = True
+                self.winner = "Draw"
+            elif (numberOfBishops[0] == 0 and numberOfBishops[1] == 0) and numberOfKnights[0] == 1 and numberOfKnights[1] == 0: ## King and Knight vs King
+                self.gameOver = True
+                self.winner = "Draw"
+            elif (numberOfBishops[0] == 0 and numberOfBishops[1] == 0) and numberOfKnights[0] == 0 and numberOfKnights[1] == 1: ## King vs King and Knight
+                self.gameOver = True
+                self.winner = "Draw"
+            elif numberOfKnights[0] == 0 and numberOfKnights[1] == 0:
+                if ((numberOfBishops[0] == 1 and numberOfBishops[1] == 0) or (numberOfBishops[0] == 0 and numberOfBishops[1] == 1)): ## King and Bishop vs King or King vs King and Bishop
                     self.gameOver = True
                     self.winner = "Draw"
-                elif numberOfBishops[0] == 0 and numberOfBishops[1] == 0 and (numberOfKnights[1] == 1 or numberOfKnights[1] == 1):
-                    self.gameOver = True
-                    self.winner = "Draw"
-                elif numberOfKnights[0] == 0 and numberOfKnights[1] == 0:
-                    if ((numberOfBishops[0] == 1 and numberOfBishops[1] == 0) or (numberOfBishops[0] == 0 and numberOfBishops[1] == 1)):
+
+                elif (numberOfBishops[0] == 1 and numberOfBishops[1] == 1): ## King and Bishop vs King and Bishop - (if bishops are on the same colour, then its a draw, if not the game carries on)
+                    for row in range(8):
+                        for col in range(8):
+                            if self.board[row][col] != EMPTY:
+                                if self.board[row][col].name == WBISHOP:
+                                    whiteBishopPosition = [row,col]
+                                elif self.board[row][col].name == BBISHOP:
+                                    blackBishopPosition = [row,col]
+                    if ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 == 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 == 0) or ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 != 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 != 0):
                         self.gameOver = True
                         self.winner = "Draw"
 
-                    elif (numberOfBishops[0] == 1 and numberOfBishops[1] == 1):
-                        for row in range(8):
-                            for col in range(8):
-                                if self.board[row][col] != EMPTY:
-                                    if self.board[row][col].name == WBISHOP:
-                                        whiteBishopPosition = [row,col]
-                                    elif self.board[row][col].name == BBISHOP:
-                                        blackBishopPosition = [row,col]
-                        if ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 == 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 == 0) or ((whiteBishopPosition[0] + whiteBishopPosition[1]) % 2 != 0 and (blackBishopPosition[0] + blackBishopPosition[1]) % 2 != 0):
-                            self.gameOver = True
-                            self.winner = "Draw"
-
         self.moveHistory.push([self.startPos, self.endPos])
-
         self.startPos = self.endPos = None
         self.turn = "White" if self.turn == "Black" else "Black"
         
@@ -338,7 +340,12 @@ class Game():
                     moves = self.validMoves([row,col])
                     for move in moves:
                         allMoves.append(move)
-        if len(allMoves) == 0 and self.winner == None:
+        if len(allMoves) == 0 and not self.winner:
+            self.gameOver = True
+            self.winner = "Draw"
+        
+        ## 50 move draw
+        if self.halfMoveClock.peak() >= 50:
             self.gameOver = True
             self.winner = "Draw"
         
@@ -847,6 +854,9 @@ class Game():
             self.pgn = self.pgn
             while len(self.pgn) > 0 and self.pgn[len(self.pgn)-1] != " ":
                 self.pgn = self.pgn[:len(self.pgn) - 1]
+
+            self.fullMoveClock -= 1
+            self.halfMoveClock.pop()
         
     def allMoves(self):
         allmoves = []
@@ -863,3 +873,68 @@ class Game():
             return chr(data[1] + 97) + str(8 - data[0])
         elif type(data) is str: #filerank to [row,column]
             return [8 - int(data[1]), ord(data[0]) - 97]
+
+    def fenGenerator(self):
+        # position + turn + Wcastling + Bcastling + enpassentPos + halfMove + fullMove
+        # position
+        fen = ""
+        for row in range(8):
+            count = 0
+            for col in range(8):
+                if self.board[row][col] != EMPTY:
+                    fen = fen + str(count) if count != 0 else fen
+                    count = 0
+                    if self.board[row][col].name[5:] == "Pawn":
+                        fen = fen + "P" if self.board[row][col].colour == "White" else fen + "p"
+                    elif self.board[row][col].name[5:] == "Knight":
+                        fen = fen + "N" if self.board[row][col].colour == "White" else fen + "n"
+                    elif self.board[row][col].name[5:] == "Bishop":
+                        fen = fen + "B" if self.board[row][col].colour == "White" else fen + "b"
+                    elif self.board[row][col].name[5:] == "Rook":
+                        fen = fen + "R" if self.board[row][col].colour == "White" else fen + "r"
+                    elif self.board[row][col].name[5:] == "Queen":
+                        fen = fen + "Q" if self.board[row][col].colour == "White" else fen + "q"
+                    elif self.board[row][col].name[5:] == "King":
+                        fen = fen + "K" if self.board[row][col].colour == "White" else fen + "k"
+                else:
+                    count += 1
+            fen = fen + str(count) if count != 0 else fen
+            fen = fen + "/"
+        fen = fen[:len(fen) - 1] ## removes the last "/"
+
+        # turn
+        fen = fen + " w " if self.turn == "White" else fen + " b "
+
+        leftBlank = True ## if fen is not appended with castling options, then it should be appended with a "-"
+        # Wcastling
+        if self.board[7][4] != EMPTY and self.board[7][4].name == WKING and not self.board[7][4].moved:
+            if self.board[7][7] != EMPTY and self.board[7][7].name == WROOK and not self.board[7][7].moved:
+                fen = fen + "K"
+                leftBlank = False
+            if self.board[7][0] != EMPTY and self.board[7][0].name == WROOK and not self.board[7][0].moved:
+                fen = fen + "Q"
+                leftBlank = False
+        # Bcastling
+        if self.board[0][4] != EMPTY and self.board[0][4].name == BKING and not self.board[0][4].moved:
+            if self.board[0][7] != EMPTY and self.board[0][7].name == BROOK and not self.board[0][7].moved:
+                fen = fen + "k"
+                leftBlank = False
+            if self.board[0][0] != EMPTY and self.board[0][0].name == BROOK and not self.board[0][0].moved:
+                fen = fen + "q"
+                leftBlank = False
+        
+        if leftBlank:
+            fen = fen + "- "
+        else:
+            fen = fen + " "
+
+        # enpassantPos
+        if self.enpassent:
+            fen = fen + self.indexCoordinateTranslate([self.enpassentPosition[0] - 1, self.enpassentPosition[1]]) + " " if self.enpassentPosition[0] == 6 else fen + self.indexCoordinateTranslate([self.enpassentPosition[0] + 1, self.enpassentPosition[1]]) + " "
+        else:
+            fen = fen + "- "
+        
+        # halfMove and fullMove count
+        fen = fen + str(self.halfMoveClock.peak()) + " " + str(self.fullMoveClock)
+        return fen
+

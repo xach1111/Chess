@@ -14,31 +14,20 @@ class Pawn(Piece):
         self.image = pygame.image.load(f"Assets/{self.colour}Pawn.png").convert_alpha()
         
         self.whitePawnScores = [
-            [8, 8, 8, 8, 8, 8, 8, 8],
-            [7, 7, 7, 7, 7, 7, 7, 7],
-            [3, 3, 4, 5, 5, 4, 3, 3],
-            [2.5, 2.5, 3, 4.5, 4.5, 3, 2.5, 2.5],
-            [2, 2, 2, 4, 4, 2, 2, 2],
-            [2.5, 1.5, 1, 2, 2, 1, 1.5, 2.5],
-            [2.5, 3, 3, 0, 0, 3, 3, 25],
-            [2, 2, 2, 2, 2, 2, 2, 2]
+            [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+            [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
+            [1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
+            [0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
+            [0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
+            [0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
+            [0.5,  1.0, 1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
+            [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
             ]
     
-        self.blackPawnScores = [
-            [2, 2, 2, 2, 2, 2, 2, 2],
-            [2.5, 3, 3, 0, 0, 3, 3, 2.5],
-            [2.5, 1.5, 1, 2, 2, 1, 1.5, 2.5],
-            [2, 2, 2, 4, 4, 2, 2, 2],
-            [2.5, 2.5, 3, 4.5, 4.5, 3, 2.5, 2.5],
-            [3, 3, 4, 5, 5, 4, 3, 3],
-            [7, 7, 7, 7, 7, 7, 7, 7],
-            [8, 8, 8, 8, 8, 8, 8, 8]
-            ]
+        self.blackPawnScores = list(reversed(self.whitePawnScores))
+
     def positionValue(self, row, col):
-        if self.colour == "White":
-            return self.whitePawnScores[row][col]
-        else:
-            return self.blackPawnScores[row][col]
+        return self.whitePawnScores[row][col] if self.colour == "White" else self.blackPawnScores[row][col]
         
 class Knight(Piece):
     def __init__(self, colour):
@@ -47,19 +36,21 @@ class Knight(Piece):
         self.name = self.colour + "Knight"
         self.image = pygame.image.load(f"Assets/{self.colour}Knight.png").convert_alpha()
         
-        self.knightScores = [
-            [0, 1, 2, 2, 2, 2, 1, 0],
-            [1, 3, 5, 5, 5, 5, 3, 1],
-            [2, 5, 6, 6.5, 6.5, 6, 5, 2],
-            [2, 5.5, 6.5, 7, 7, 6.5, 5.5, 2],
-            [2, 5, 6.5, 7, 7, 6.5, 5, 2],
-            [2, 5.5, 6, 6.5, 6.5, 6, 5.5, 2],
-            [1, 3, 5, 5.5, 5.5, 5, 3, 1],
-            [0, 1, 2, 2, 2, 2, 1, 0]
+        self.whiteKnightScores = [
+            [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
+            [-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
+            [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
+            [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+            [-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0],
+            [-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+            [-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0],
+            [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
             ]
+
+        self.blackKnightScores = list(reversed(self.whiteKnightScores))
         
-    def positionValue(self, row, col):   
-        return self.knightScores[row][col]
+    def positionValue(self, row, col):
+        return self.whiteKnightScores[row][col] if self.colour == "White" else self.blackKnightScores[row][col]
     
 class Bishop(Piece):
     def __init__(self, colour):
@@ -68,19 +59,21 @@ class Bishop(Piece):
         self.name = self.colour + "Bishop"
         self.image = pygame.image.load(f"Assets/{self.colour}Bishop.png").convert_alpha()
         
-        self.bishopScores = [
-            [0, 2, 2, 2, 2, 2, 2, 0],
-            [2, 4, 4, 4, 4, 4, 4, 2],
-            [2, 4, 5, 6, 6, 5, 4, 2],
-            [2, 5, 5, 6, 6, 5, 5, 2],
-            [2, 4, 6, 6, 6, 6, 4, 2],
-            [2, 6, 6, 6, 6, 6, 6, 2],
-            [2, 5, 4, 4, 4, 4, 5, 2],
-            [0, 2, 2, 2, 2, 2, 2, 0]
+        self.whiteBishopScores = [
+            [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
+            [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+            [ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
+            [ -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0],
+            [ -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0],
+            [ -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0],
+            [ -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0],
+            [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
             ]
         
-    def positionValue(self, row, col):   
-        return self.bishopScores[row][col]
+        self.blackBishopScores = list(reversed(self.whiteBishopScores))
+        
+    def positionValue(self, row, col):
+        return self.whiteBishopScores[row][col] if self.colour == "White" else self.blackBishopScores[row][col]
 
 class Rook(Piece):
     def __init__(self, colour):
@@ -89,19 +82,21 @@ class Rook(Piece):
         self.name = self.colour + "Rook"
         self.image = pygame.image.load(f"Assets/{self.colour}Rook.png").convert_alpha()
 
-        self.rookScores = [
-            [2.5, 2.5, 2.5, 5, 5, 2.5, 2.5, 2.5],
-            [5, 7.5, 7.5, 7.5, 7.5, 7.5, 7.5, 5],
-            [0, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0],
-            [0, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0],
-            [0, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0],
-            [0, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0],
-            [0, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 0],
-            [2.5, 2.5, 2.5, 5, 5, 2.5, 2.5, 2.5]
+        self.whiteRookScores = [
+            [  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+            [  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
+            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+            [  0.0,  0.0,  0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
             ]
         
-    def positionValue(self, row, col):   
-        return self.rookScores[row][col]
+        self.blackRookScores = list(reversed(self.whiteRookScores))
+        
+    def positionValue(self, row, col):
+        return self.whiteRookScores[row][col] if self.colour == "White" else self.blackRookScores[row][col]
     
 class Queen(Piece):
     def __init__(self, colour):
@@ -110,18 +105,21 @@ class Queen(Piece):
         self.name = self.colour + "Queen"
         self.image = pygame.image.load(f"Assets/{self.colour}Queen.png").convert_alpha()
 
-        self.queenScores = [
-            [0, 2, 2, 3, 3, 2, 2, 0],
-            [2, 4, 4, 4, 4, 4, 4, 2],
-            [2, 4, 5, 5, 5, 5, 4, 2],
-            [3, 4, 5, 5, 5, 5, 4, 3],
-            [4, 4, 5, 5, 5, 5, 4, 3],
-            [2, 5, 5, 5, 5, 5, 4, 2],
-            [2, 4, 5, 4, 4, 4, 4, 2],
-            [0, 2, 2, 3, 3, 2, 2, 0]]
+        self.whiteQueenScores = [
+            [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
+            [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+            [ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+            [ -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+            [  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+            [ -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+            [ -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+            [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
+            ]
         
-    def positionValue(self, row, col):   
-        return self.queenScores[row][col]
+        self.blackQueenScores = list(reversed(self.whiteQueenScores))
+        
+    def positionValue(self, row, col):
+        return self.whiteQueenScores[row][col] if self.colour == "White" else self.blackQueenScores[row][col]
     
 class King(Piece):
     def __init__(self, colour):

@@ -1,32 +1,25 @@
 class Queue:
-    class Node:
-        def __init__(self, data, next):
-            self.data = data
-            self.next = next
-        
-    def __init__(self):
-        self.head = None
-        self.tail = None
+    def __init__(self, Size):
+        self.__queue = [None] * Size
+        self.__head = 0
+        self.__tail = 0
     
-    def enqueue(self, data):
-        new = Queue.Node(data, None)
-        if self.isEmpty():
-            self.head = new
-        else:
-            self.tail.next = new
-        self.tail = new
+    def Enqueue(self, data):
+        if not self.isFull():
+            self.__queue[self.__tail] = data
+            self.__tail += 1
     
-    def dequeue(self):
+    def Dequeue(self):
         if not self.isEmpty():
-            result = self.head.data
-            self.head = self.head.next
-            if self.isEmpty():
-                self.tail = None
-            return result
-    def peak(self):
+            self.__head += 1
+            return self.__queue[self.__head - 1]
+
+    def Peak(self):
         if not self.isEmpty():
-            return self.head.data
-        return
+            return self.__queue[self.__head]
 
     def isEmpty(self):
-        return True if self.head == None else False
+        return True if self.__tail == 0 else False
+
+    def isFull(self):
+        return True if self.__tail == len(self.__queue) else False

@@ -6,6 +6,7 @@ import socket
 import random
 from Stack import Stack
 import re
+from timer import timer
 
 def close():
     pygame.quit()
@@ -21,7 +22,7 @@ def getColours(SERVER, username):
     h = eval(SERVER.recv(BYTES).decode())
     return d, l, h
 
-def evaluate(board, colour):
+def evaluate(board, colour): ## takes into account value of piece and costant additional value on its location on the board
     if board.gameOver:
         if board.winner == colour:
             return 1000
@@ -59,6 +60,7 @@ def negamax(board, depth, alpha, beta, colour): ## algorithm to find the best mo
         return None, evaluate(board, colour)
     maximum = -100000000
     moves = board.allMoves()
+    moves.reverse()
     # random.shuffle(moves)
     for move in moves:
         board.startPos = move[0]
@@ -106,19 +108,28 @@ def onePlayer(SCREEN, SERVER, username, depth):
         backButton.draw()
         pygame.display.flip()
         if board.turn == AIColour and not board.gameOver:
-            move, v = negamax(board, depth, -10000, 10000, AIColour)
+            if depth != 13:
+                move, v = negamax(board, depth, -10000, 10000, AIColour)
+            else:
+                SERVER.send("[STOCKFISH]".encode())
+                SERVER.recv(BYTES).decode()
+                SERVER.send(board.fenGenerator().encode())
+                coordinate = SERVER.recv(BYTES).decode() ## example: e4e5
+                move = [board.indexCoordinateTranslate(coordinate[0:2]), board.indexCoordinateTranslate(coordinate[2:4])]
             board.startPos = move[0]
             board.endPos = move[1]
             board.action()
+
     close()        
 
 def levelChooser(SCREEN, SERVER, username):
     board = Game(SCREEN)
     d, l, h = getColours(SERVER, username)
     backButton = Button(SCREEN, 1110, 650, 280, 100, "Back")
-    easy = Button(SCREEN, 500, 250, 400, 100, "Easy", BLACK)
-    medium = Button(SCREEN, 500, 350, 400, 100, "Medium", BLACK)
-    hard = Button(SCREEN, 500, 450, 400, 100, "Hard", BLACK)
+    easy = Button(SCREEN, 500, 200, 400, 100, "Easy", BLACK)
+    medium = Button(SCREEN, 500, 300, 400, 100, "Medium", BLACK)
+    hard = Button(SCREEN, 500, 400, 400, 100, "Hard", BLACK)
+    stockfish = Button(SCREEN, 500, 500, 400, 100, "Stockfish (depth:13)", BLACK)
     run = True
     while run:
         SCREEN.fill(DARKGREY)
@@ -138,12 +149,15 @@ def levelChooser(SCREEN, SERVER, username):
                 elif hard.clicked():
                     onePlayer(SCREEN, SERVER, username, 3)
                     return
+                elif stockfish.clicked():
+                    onePlayer(SCREEN, SERVER, username, 13)
 
             if event.type == pygame.QUIT:
                 run = False
         easy.draw()
         medium.draw()
         hard.draw()
+        stockfish.draw()
         backButton.draw()
         pygame.display.flip()
     close()
@@ -167,7 +181,8 @@ def twoPlayer(SCREEN, SERVER, username):
             label.draw()
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                board.action()
+                if not board.gameOver:
+                    board.action()
                 if backButton.clicked():
                     mainMenu(SCREEN, SERVER, username)
                     return
@@ -180,7 +195,7 @@ def twoPlayer(SCREEN, SERVER, username):
         pygame.display.flip()
     close()
 
-def findMatch(SCREEN, SERVER, username):
+def findMatch(SCREEN, SERVER, username): ## online match played against users connected to the same local network
     board = Game(SCREEN)
     d, l, h = getColours(SERVER, username)
     label = Label(SCREEN, 1155, 450, "Waiting for players")
@@ -220,31 +235,34 @@ def findMatch(SCREEN, SERVER, username):
     board.flipped = colour == "Black"
     run = True
     q = False
+    
+    clock = pygame.time.Clock()
+    t = timer(600) ## 10 minutes
+    timerLable = Label(SCREEN, 10, 10, "")
+    if colour == "White":
+        t.toggle()
     while run:
+        clock.tick(60) ## 60 fames per second no matter the speed of the device to ensure that the timer will run the same on all devices
         SCREEN.fill(DARKGREY)
         board.drawBoard(300, 0 ,d, l, h)
+        timerLable.setText(t.fetchtime())
         
         ## data sent = Resign, Waiting or [row, column]
         datasent = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                q = True
-                pgn = board.pgn
-                if pgn != "":
-                    while pgn[len(pgn) - 1] == " ":
-                        pgn = pgn[:len(pgn) - 1]
-                    pgn = pgn + "0-1" if colour == "White" else pgn + "1-0"
-                SERVER.send(str(["Resign", pgn]).encode())
-                datasent = True
-
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if board.turn == colour:
-                    move = board.action()
-                    if move:
-                        SERVER.send(str([move, board.pgn]).encode())
-                        datasent = True
-
-                if backButton.clicked():
+        if t.timesUp:
+            pgn = board.pgn
+            if pgn != "":
+                while pgn[len(pgn) - 1] == " ":
+                    pgn = pgn[:len(pgn) - 1]
+                pgn = pgn + "0-1" if colour == "White" else pgn + "1-0"
+            SERVER.send(str(["Resign", pgn]).encode())
+            datasent = True
+            t.running = False
+            del t
+        else:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    q = True
                     pgn = board.pgn
                     if pgn != "":
                         while pgn[len(pgn) - 1] == " ":
@@ -252,7 +270,28 @@ def findMatch(SCREEN, SERVER, username):
                         pgn = pgn + "0-1" if colour == "White" else pgn + "1-0"
                     SERVER.send(str(["Resign", pgn]).encode())
                     datasent = True
-        
+                    t.running = False
+                    del t
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if board.turn == colour:
+                        move = board.action()
+                        if move:
+                            SERVER.send(str([move, board.pgn]).encode())
+                            datasent = True
+                            t.toggle()
+
+                    if backButton.clicked():
+                        pgn = board.pgn
+                        if pgn != "":
+                            while pgn[len(pgn) - 1] == " ":
+                                pgn = pgn[:len(pgn) - 1]
+                            pgn = pgn + "0-1" if colour == "White" else pgn + "1-0"
+                        SERVER.send(str(["Resign", pgn]).encode())
+                        datasent = True
+                        t.running = False
+                        del t
+            
         if not datasent:
             SERVER.send(str(["Waiting", board.pgn]).encode())
     
@@ -262,6 +301,7 @@ def findMatch(SCREEN, SERVER, username):
         if data == "Game Over":
             if q:
                 close()
+                return
             else:
                 mainMenu(SCREEN, SERVER, username)
                 return
@@ -270,13 +310,17 @@ def findMatch(SCREEN, SERVER, username):
             opponentsMove = eval(data)
             board.startPos, board.endPos = opponentsMove[0], opponentsMove[1]
             board.action()
+            t.toggle()
 
+        timerLable.draw()
         backButton.draw()
         pygame.display.flip()
     mainMenu(SCREEN, SERVER, username)
 
 def pgnToOutcome(colour, pgn):
-    if pgn[len(pgn) - 1] == "1/2":
+    while pgn[len(pgn) - 1] == " ":
+        pgn = pgn[:len(pgn) - 1]
+    if pgn[len(pgn) - 1] == "2":
         return "Draw"
     
     if (colour == "White" and pgn[len(pgn) - 1] == "0") or (colour == "Black" and pgn[len(pgn) - 1] == "1"):
@@ -300,7 +344,6 @@ def pgntomoves(SCREEN, pgn):
                 break
             else:
                 board.undoMove()
-    
     return moves
 
 def viewGame(SCREEN, SERVER, username, gamedata):
@@ -637,33 +680,33 @@ def viewUser(SCREEN, SERVER, username, userDetails, i, j):
 
 def sortUsers(array, index): ## Merge Sort
     if len(array) > 1:
-        left = array[:len(array)//2]
-        right = array[len(array)//2:]
+        l = array[:len(array)//2]
+        r = array[len(array)//2:]
 
-        sortUsers(left, index)
-        sortUsers(right, index)
+        sortUsers(l, index)
+        sortUsers(r, index)
 
-        i = 0
-        j = 0
-        k = 0
-        while i < len(left) and j < len(right):
-            if left[i][index].lower() < right[j][index].lower():
-                array[k] = left[i]
-                i += 1
+        rightIndex = 0
+        leftIndex = 0
+        arrayPosition = 0
+        while rightIndex < len(l) and leftIndex < len(r):
+            if l[rightIndex][index].lower() < r[leftIndex][index].lower():
+                array[arrayPosition] = l[rightIndex]
+                rightIndex += 1
             else:
-                array[k] = right[j]
-                j += 1
-            k += 1
+                array[arrayPosition] = r[leftIndex]
+                leftIndex += 1
+            arrayPosition += 1
 
-        while i < len(left):
-            array[k] = left[i]
-            i += 1
-            k += 1
+        while rightIndex < len(l):
+            array[arrayPosition] = l[rightIndex]
+            rightIndex += 1
+            arrayPosition += 1
         
-        while j < len(right):
-            array[k] = right[j]
-            j += 1
-            k += 1
+        while leftIndex < len(r):
+            array[arrayPosition] = r[leftIndex]
+            leftIndex += 1
+            arrayPosition += 1
 
 def adminSettings(SCREEN, SERVER, username, i, j):
     page = 1
@@ -772,7 +815,7 @@ def changePassword(SCREEN, SERVER, username):
     confirmPassword = TextBox(SCREEN, 450,450,500,100, "Confirm password")
     changePasswordButton = Button(SCREEN, 750,650,500,100, "Change Password")
     backButton = Button(SCREEN, 150, 650, 500, 100, "Back")
-    resultLable = Label(SCREEN, 600, 600, "")
+    resultLable = Label(SCREEN, 500, 600, "")
     run = True
     while run:
         SCREEN.fill(DARKGREY)
@@ -798,13 +841,20 @@ def changePassword(SCREEN, SERVER, username):
                 if changePasswordButton.clicked():
                     if newPassword.text == confirmPassword.text:
                         if successfulLogin(SERVER, username, currentPassword.text):
-                            SERVER.send("[CHANGEPASS]".encode())
-                            SERVER.recv(BYTES).decode()
-                            SERVER.send(str([username, newPassword.text]).encode())
-                            currentPassword = TextBox(SCREEN, 450,50,500,100, "Current password")
-                            newPassword = TextBox(SCREEN, 450,250,500,100, "New password")
-                            confirmPassword = TextBox(SCREEN, 450,450,500,100, "Confirm password")
-                            resultLable.setText("Succesfully Changed")
+                            passwordFormat = re.compile("^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$")
+                            if len(newPassword.text) > 8:
+                                if passwordFormat.search(newPassword.text):
+                                    SERVER.send("[CHANGEPASS]".encode())
+                                    SERVER.recv(BYTES).decode()
+                                    SERVER.send(str([username, newPassword.text]).encode())
+                                    currentPassword = TextBox(SCREEN, 450,50,500,100, "Current password")
+                                    newPassword = TextBox(SCREEN, 450,250,500,100, "New password")
+                                    confirmPassword = TextBox(SCREEN, 450,450,500,100, "Confirm password")
+                                    resultLable.setText("Succesfully Changed")
+                                else:
+                                    resultLable.setText("Password needs to contain an uppercase, symbol and number")
+                            else:
+                                resultLable.setText("Password is too short")
                         else:
                             resultLable.setText("Incorrect Password")
                     else:
@@ -967,22 +1017,13 @@ def mainMenu(SCREEN, SERVER, username):
     close()
 
 def registerLogic(SERVER, fn, ln, u, p, cp):
+    usernameFormat = re.compile("^100[1|2][0-9]{5}$")
+    passwordFormat = re.compile("^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$")
     if fn and ln and u and p and cp:
         if p == cp:
-            if len(u) == 9 and u.isnumeric():
+            if usernameFormat.search(u):
                 if len(p) > 8:
-                    symbol = False
-                    capital = False
-                    number = False
-                    for character in p:
-                        if character.isnumeric():
-                            number = True
-                        elif character.isalpha() and character.isupper():
-                            capital = True
-                        elif not character.isalpha():
-                            symbol = True
-                    
-                    if symbol and capital and number:
+                    if passwordFormat.search(p):
                         SERVER.send("[REGISTER]".encode())
                         SERVER.recv(BYTES).decode()
                         SERVER.send(fn.encode())

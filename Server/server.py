@@ -4,7 +4,9 @@ import threading
 import random
 import datetime
 import time
+import requests
 from Queue import Queue
+from Stack import Stack
 
 HOST = "192.168.0.36"
 # HOST = "172.25.9.98"
@@ -61,7 +63,7 @@ def localPlay(player1, player2):
         wr = p1move == "Waiting" and p2move == "Resign"
         rm = p1move == "Resign" and p2move[0] == "["
         mr = p1move[0] == "[" and p2move == "Resign"
-        rr = p1move == "Resign" and p2move == "Resign" ## very rare due to speed of processor but still a possible
+        rr = p1move == "Resign" and p2move == "Resign" ## very rare due to processing speed but still a possibility
 
         if rw or rr or rm or mw:
             pgn = player1data[1]
@@ -75,7 +77,7 @@ def localPlay(player1, player2):
             player2.send("Waiting".encode())
 
         elif mw: ## player 1 sent a move and player 2 is waiting
-            if len(pgn) >= 3 and pgn[len(pgn) - 3] == "-": ## if the game is over 
+            if "-" in pgn: ## if the game is over 
                 player1.send("Game Over".encode())
                 threading.Thread(target=handler, args=(player1,)).start()
                 player2.send("Game Over".encode())
@@ -88,7 +90,7 @@ def localPlay(player1, player2):
                 player2.send(str(player1data[0]).encode())
         
         elif wm: ## player 1 is waiting and player 2 sent a move
-            if len(pgn) >= 3 and pgn[len(pgn) - 3] == "-": ## if the game is over
+            if "-" in pgn: ## if the game is over
                 player2.send("Game Over".encode())
                 threading.Thread(target=handler, args=(player2,)).start()
                 player1.send("Game Over".encode())
@@ -372,17 +374,36 @@ def handler(client):
                 username = client.recv(BYTES).decode()
                 con = sqlite3.connect("Chess.db")
                 cursor = con.cursor()
-                sql = "SELECT whitePlayerID, blackPlayerID, PGN from Games INNER JOIN AccountGameLink on  Games.gameID = AccountGameLink.gameID WHERE username = ?"
-                data = cursor.execute(sql, username).fetchall()
+                sql = "SELECT count(PGN) from Games INNER JOIN AccountGameLink on Games.gameID = AccountGameLink.gameID WHERE username = ?" ## Aggregate sql
+                count = int(cursor.execute(sql, (username,)).fetchall()[0][0])
+                sql = "SELECT whitePlayerID, blackPlayerID, PGN from Games INNER JOIN AccountGameLink on Games.gameID = AccountGameLink.gameID WHERE username = ?"
+                data = cursor.execute(sql, (username,)).fetchall()
                 con.commit()
                 con.close()
-                result = []
+                result = Queue(count * 2) ## half for dequing the reverse order, and half for enquing the correct order
                 for game in data:
-                    result.append([attribute for attribute in game])
+                    result.Enqueue([attribute for attribute in game])
+                stack = Stack(count)
+                for i in range(count):
+                    stack.push(result.Dequeue())
+                for i in range(count):
+                    result.Enqueue(stack.pop())
+                reverseddata = []
+                for i in range(count):
+                    reverseddata.append(result.Dequeue())
+                
                 # it is likely that the number of bit that contain every game played is too large, so a header is sent first
-                client.send(str(len(str(result).encode())).encode()) # sends the number of bits being sent over
+                client.send(str(len(str(reverseddata).encode())).encode()) # sends the number of bits being sent over
                 client.recv(BYTES).decode()
-                client.send(str(result).encode())
+                client.send(str(reverseddata).encode())
+
+            elif data == "[STOCKFISH]": ## Stockfish API
+                client.send("FEN?".encode())
+                fen = client.recv(BYTES).decode()
+                response = requests.get(f"https://stockfish.online/api/stockfish.php?fen={fen}&depth=13&mode=bestmove") ## https://stockfish.online/
+                move = response.json() ## parsing JSON
+                client.send(move.get("data")[9:13].encode())
+
         except Exception as error:
             print(type(error).__name__, "-", error)
             break
