@@ -7,9 +7,10 @@ import time
 import requests
 from Queue import Queue
 from Stack import Stack
+import hash
 
 HOST = "192.168.0.36"
-# HOST = "172.25.9.98"
+# HOST = "172.25.13.62"
 
 PORT = 1234
 BYTES = 1024
@@ -139,7 +140,7 @@ def handler(client):
                 client.send("Starting Login Sequence".encode())
                 username = client.recv(BYTES).decode()
                 client.send("Recieved Username".encode())
-                password = client.recv(BYTES).decode()
+                password = hash.hash(client.recv(BYTES).decode())
                 con = sqlite3.connect("Chess.db")
                 cursor = con.cursor()
                 sql = "select username from Accounts where username = ?"
@@ -185,7 +186,7 @@ def handler(client):
                     con = sqlite3.connect("Chess.db")
                     cursor = con.cursor()
                     sql = "insert into Accounts (username, firstName, lastName, password) values(?,?,?,?)"
-                    cursor.execute(sql,(u, fn, ln, p,))
+                    cursor.execute(sql,(u, fn, ln, hash.hash(p),))
                     con.commit()
                     con.close()
                     client.send("True".encode())
@@ -205,7 +206,7 @@ def handler(client):
                     con = sqlite3.connect("Chess.db")
                     cursor = con.cursor()
                     sql = "insert into Accounts (username, firstName, lastName, password, accountType) values (?,?,?,?,?)"
-                    cursor.execute(sql,(data[2], data[0], data[1], data[3], "Admin"))
+                    cursor.execute(sql,(data[2], data[0], data[1], hash.hash(data[3]), "Admin"))
                     con.commit()
                     con.close()
                     client.send("True".encode())
@@ -238,7 +239,7 @@ def handler(client):
                 u = client.recv(BYTES).decode()
                 con = sqlite3.connect("Chess.db")
                 cursor = con.cursor()
-                sql = "update Accounts set password = 'Password_123' where username = ?"
+                sql = "update Accounts set password = '921944021f6f2f69b1d487228b95c0191854a5e6bc1311318bee865dd8f5c7a7' where username = ?" ## hashed "Password_123"
                 cursor.execute(sql, (u,))
                 con.commit()
                 con.close()
@@ -299,7 +300,7 @@ def handler(client):
                 con = sqlite3.connect("Chess.db")
                 cursor = con.cursor()
                 sql = "Update Accounts Set password = ? Where username = ?"
-                cursor.execute(sql, (password, username))
+                cursor.execute(sql, (hash.hash(password), username))
                 con.commit()
                 con.close()
 

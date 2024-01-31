@@ -60,7 +60,6 @@ def negamax(board, depth, alpha, beta, colour): ## algorithm to find the best mo
         return None, evaluate(board, colour)
     maximum = -100000000
     moves = board.allMoves()
-    moves.reverse()
     # random.shuffle(moves)
     for move in moves:
         board.startPos = move[0]
@@ -119,7 +118,6 @@ def onePlayer(SCREEN, SERVER, username, depth):
             board.startPos = move[0]
             board.endPos = move[1]
             board.action()
-
     close()        
 
 def levelChooser(SCREEN, SERVER, username):
