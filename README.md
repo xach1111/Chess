@@ -9,4 +9,7 @@ AQA Computer Science Non-Exam Assessment Coursework
 - Change `HOST` to local IP address
 - Run server.py
 - Run main.py
-  
+
+## Required Modules
+- Pygame
+- Requests
